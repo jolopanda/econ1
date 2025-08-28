@@ -1,18 +1,15 @@
-// This file represents a serverless function that would run on a backend.
-// It is NOT part of the frontend bundle and securely uses the API key on the server.
-// In a real deployment (e.g., on Vercel), this file would be placed in the /api directory
-// and would automatically become an API endpoint that handles requests to /api/economic-data.
-// NOTE: This code will not run in the current sandbox environment; it is for a real deployment.
+// This file represents a serverless function that runs on a backend (like Vercel).
+// It securely uses the API key on the server and is not exposed to the client browser.
+// When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { EconomicIndicator } from '../types';
 
-// This is a simplified representation of what would happen inside a serverless handler.
-// The core logic of calling the Gemini API is here.
+// The core logic for fetching data from the Gemini API
 async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: string[] }> {
   if (!process.env.API_KEY) {
-    // This error would be seen in the server logs, not the browser console.
-    throw new Error("API_KEY environment variable not set on the server");
+    // This error is logged on the server, not shown to the user directly.
+    throw new Error("API_KEY environment variable not set on the server.");
   }
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -63,7 +60,6 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const jsonText = response.text.trim();
   const result = JSON.parse(jsonText);
 
-  // Server-side validation
   if (result && Array.isArray(result.data) && Array.isArray(result.sources)) {
     return result;
   } else {
@@ -71,21 +67,32 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   }
 }
 
-// In a real serverless platform like Vercel or Netlify, you would export
-// a default handler function that receives request and response objects.
-// Example for Vercel:
-/*
+// Vercel serverless function handler
+// This function receives the request and sends the response.
 export default async function handler(req, res) {
+  // Allow requests from the frontend origin
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight OPTIONS request for CORS
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   try {
     const result = await getEconomicData();
+    // Vercel enables caching by default. 'no-store' prevents stale data.
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json(result);
   } catch (error) {
     console.error("Error in serverless function:", error);
-    res.status(500).json({ message: "Failed to fetch economic data.", details: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
+    res.status(500).json({ message: "Failed to fetch economic data.", details: errorMessage });
   }
 }
-*/
