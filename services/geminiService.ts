@@ -1,70 +1,50 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import type { EconomicIndicator } from '../types';
 
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// This function now fetches data from our own backend API endpoint.
+// The serverless function at /api/economic-data handles the secure call to the Gemini API.
 export const fetchEconomicData = async (): Promise<{ data: EconomicIndicator[], sources: string[] }> => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: "Generate a forecast for key economic indicators for the Philippines for the 6 months leading up to and including July 2026. The indicators should be GDP Growth (%), Inflation Rate (%), Unemployment Rate (%), Bank Average Lending Rate (%), GDP in constant 2018 prices (in Trillion PHP), GNI Growth (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight Reverse Repurchase Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%). Provide the data month by month. Also, list the following as the typical sources for this kind of data: Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), National Economic and Development Authority (NEDA), World Bank, International Monetary Fund (IMF), and Asian Development Bank (ADB).",
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            data: {
-              type: Type.ARRAY,
-              description: "An array of monthly economic indicator forecasts.",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  month: { type: Type.STRING, description: "The month and year, e.g., 'Feb 2026'" },
-                  gdpGrowth: { type: Type.NUMBER, description: "Projected GDP Growth rate as a percentage." },
-                  inflationRate: { type: Type.NUMBER, description: "Projected Inflation rate as a percentage." },
-                  unemploymentRate: { type: Type.NUMBER, description: "Projected Unemployment rate as a percentage." },
-                  lendingRate: { type: Type.NUMBER, description: "Projected Bank Average Lending Rate as a percentage." },
-                  gdpConstant: { type: Type.NUMBER, description: "Projected GDP in constant 2018 prices, in Trillion PHP." },
-                  gniGrowth: { type: Type.NUMBER, description: "Projected GNI Growth rate as a percentage." },
-                  pesoDollarRate: { type: Type.NUMBER, description: "Projected Peso-Dollar Exchange Rate (PHP per USD) at the end of the period." },
-                  underemploymentRate: { type: Type.NUMBER, description: "Projected Underemployment rate as a percentage." },
-                  wtiCrudeOil: { type: Type.NUMBER, description: "Projected WTI Crude Oil Price in USD per barrel." },
-                  reverseRepoRate: { type: Type.NUMBER, description: "Projected Overnight Reverse Repurchase Rate as a percentage." },
-                  depositFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Deposit Facility Rate as a percentage." },
-                  lendingFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Lending Facility Rate as a percentage." },
-                },
-                required: ["month", "gdpGrowth", "inflationRate", "unemploymentRate", "lendingRate", "gdpConstant", "gniGrowth", "pesoDollarRate", "underemploymentRate", "wtiCrudeOil", "reverseRepoRate", "depositFacilityRate", "lendingFacilityRate"],
-              },
-            },
-            sources: {
-              type: Type.ARRAY,
-              description: "A list of typical sources for the data.",
-              items: {
-                type: Type.STRING
-              }
-            }
-          },
-          required: ["data", "sources"],
-        },
-      },
-    });
+    // In a real deployment on a platform like Vercel or Netlify, a request to this path
+    // would automatically be routed to the serverless function located at /api/economic-data.ts.
+    // NOTE: This will fail in the current sandbox environment as there is no backend server.
+    const response = await fetch('/api/economic-data');
 
-    const jsonText = response.text.trim();
-    const result = JSON.parse(jsonText);
+    if (!response.ok) {
+      // Try to parse error response from the serverless function, if any.
+      const errorBody = await response.text();
+      let errorMessage = `Server responded with ${response.status}: ${response.statusText}.`;
+      try {
+        const errorJson = JSON.parse(errorBody);
+        if (errorJson.message) {
+          errorMessage += ` Details: ${errorJson.message}`;
+        }
+      } catch (e) {
+        // Not a JSON response, just append the body text if it's not too long.
+        if (errorBody) {
+          errorMessage += ` Response: ${errorBody.substring(0, 100)}`;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
     
-    // Basic validation
+    // Basic validation on the client side as well.
     if (result && Array.isArray(result.data) && Array.isArray(result.sources)) {
       return result as { data: EconomicIndicator[], sources: string[] };
     } else {
-      console.error("Parsed data is not in the expected format:", result);
-      throw new Error("Failed to fetch valid economic data. The format is incorrect.");
+      console.error("Data received from API is not in the expected format:", result);
+      throw new Error("The data format from the server is incorrect.");
     }
   } catch (error) {
-    console.error("Error fetching economic data from Gemini API:", error);
-    throw new Error("Failed to fetch economic data. Please check the console for more details.");
+    console.error("Error fetching from /api/economic-data:", error);
+
+    if (error instanceof TypeError) { 
+      // This is the most likely error in this sandbox: a network failure because the endpoint doesn't exist.
+      throw new Error("Failed to connect to the backend API. This is expected in this environment. In a real deployment, it would indicate a server issue.");
+    }
+
+    // Re-throw the original error or a generic one.
+    throw new Error(error instanceof Error ? error.message : "An unknown error occurred while fetching data.");
   }
 };
