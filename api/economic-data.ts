@@ -15,7 +15,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: "Generate a dataset for key economic indicators for the Philippines. Provide 6 months of recent historical data and a 6-month forecast from that point forward. For each monthly data point, include a 'type' field which must be either 'Historical' or 'Forecast'. The indicators are: GDP Growth (%), Inflation Rate (%), Unemployment Rate (%), Bank Average Lending Rate (%), GDP in constant 2018 prices (in Trillion PHP), GNI Growth (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight Reverse Repurchase Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%). Provide the data month by month. Also, list the following as the typical sources for this kind of data: Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), National Economic and Development Authority (NEDA), World Bank, International Monetary Fund (IMF), and Asian Development Bank (ADB).",
+    contents: "Generate a dataset for key economic indicators for the Philippines. Provide historical data from February 2025 to July 2025, and then a forecast from August 2025 to July 2026. For each monthly data point, include a 'type' field which must be either 'Historical' or 'Forecast'. The indicators are: GDP Growth (%), Inflation Rate (%), Unemployment Rate (%), Bank Average Lending Rate (%), GDP in constant 2018 prices (in Trillion PHP), GNI Growth (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight Reverse Repurchase Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%). Provide the data month by month. Also, list the following as the typical sources for this kind of data: Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), National Economic and Development Authority (NEDA), World Bank, International Monetary Fund (IMF), and Asian Development Bank (ADB).",
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -23,11 +23,11 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
         properties: {
           data: {
             type: Type.ARRAY,
-            description: "An array of 12 monthly economic indicator data points, split between historical and forecast.",
+            description: "An array of 18 monthly economic indicator data points, with historical data from February 2025 to July 2025 and forecast data from August 2025 to July 2026.",
             items: {
               type: Type.OBJECT,
               properties: {
-                month: { type: Type.STRING, description: "The month and year, e.g., 'Feb 2026'" },
+                month: { type: Type.STRING, description: "The month and year, e.g., 'Feb 2025'" },
                 type: { type: Type.STRING, description: "The type of data, either 'Historical' or 'Forecast'." },
                 gdpGrowth: { type: Type.NUMBER, description: "Projected GDP Growth rate as a percentage." },
                 inflationRate: { type: Type.NUMBER, description: "Projected Inflation rate as a percentage." },
