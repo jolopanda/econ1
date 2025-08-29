@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
 
 interface EconomicChartProps {
@@ -9,9 +9,11 @@ interface EconomicChartProps {
 
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const dataType = payload[0].payload.type;
     return (
       <div className="p-4 bg-gray-800 bg-opacity-90 border border-gray-700 rounded-lg shadow-lg">
         <p className="label text-lg font-bold text-white">{`${label}`}</p>
+        <p className="text-xs text-gray-400 mb-2">{dataType}</p>
         {payload.map((entry: any) => {
            const key = entry.dataKey as IndicatorKey;
            const metadata = INDICATORS_MAP[key];
@@ -38,6 +40,9 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 };
 
 const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators }) => {
+  const forecastStartIndex = data.findIndex(d => d.type === 'Forecast');
+  const hasForecast = forecastStartIndex > 0 && forecastStartIndex < data.length;
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <AreaChart
@@ -79,6 +84,17 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                 />
             );
         })}
+        {hasForecast && (
+            <ReferenceArea
+                x1={data[forecastStartIndex].month}
+                x2={data[data.length - 1].month}
+                stroke="transparent"
+                fill="rgba(107, 114, 128, 0.2)"
+                ifOverflow="visible"
+            >
+                <Label value="Forecast" position="insideTopRight" fill="#9ca3af" fontSize={12} offset={10} />
+            </ReferenceArea>
+        )}
       </AreaChart>
     </ResponsiveContainer>
   );

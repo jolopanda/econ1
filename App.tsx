@@ -13,6 +13,7 @@ const App: React.FC = () => {
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<string>('');
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -21,6 +22,16 @@ const App: React.FC = () => {
       const { data, sources } = await fetchEconomicData();
       setAllData(data);
       setSources(sources);
+
+      if (data && data.length > 0) {
+        const forecastStart = data.find(d => d.type === 'Forecast');
+        const firstMonth = data[0].month;
+        const lastMonth = data[data.length - 1].month;
+        const lastHistoricalMonth = forecastStart ? data[data.findIndex(d => d.type === 'Forecast') - 1].month : lastMonth;
+        
+        setDateRange(`Data from ${firstMonth} to ${lastHistoricalMonth} & Forecast until ${lastMonth}`);
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
@@ -47,12 +58,13 @@ const App: React.FC = () => {
     }
 
     // Create Headers
-    const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    const headers = ['Month', 'Type', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
 
     // Create Rows
     const rows = allData.map(row => {
       const values = [
         `"${row.month}"`,
+        `"${row.type}"`,
         ...selectedIndicators.map(key => row[key])
       ];
       return values.join(',');
@@ -63,7 +75,7 @@ const App: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'philippine-economic-outlook.csv');
+    link.setAttribute('download', 'philippine-economic-trends.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -125,10 +137,10 @@ const App: React.FC = () => {
       <div className="w-full max-w-7xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
-            Philippine Economic Outlook
+            Philippine Economic Trends
           </h1>
           <p className="mt-2 text-lg text-gray-400">
-            Projected Key Indicators for July 2026
+            {dateRange || 'Historical Data and Future Outlook'}
           </p>
         </header>
 

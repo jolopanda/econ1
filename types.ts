@@ -12,9 +12,10 @@ export interface EconomicIndicator {
   reverseRepoRate: number;
   depositFacilityRate: number;
   lendingFacilityRate: number;
+  type: 'Historical' | 'Forecast';
 }
 
-export type IndicatorKey = keyof Omit<EconomicIndicator, 'month'>;
+export type IndicatorKey = keyof Omit<EconomicIndicator, 'month' | 'type'>;
 
 export interface IndicatorMetadata {
   name: string;
