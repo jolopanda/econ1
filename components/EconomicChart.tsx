@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label, ReferenceLine } from 'recharts';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
 
 interface EconomicChartProps {
@@ -23,11 +23,11 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
            if (!metadata || entry.value === null || entry.value === undefined) return null;
            
            const value = entry.value;
-           const formattedValue = metadata.unit === '$' 
-             ? `${metadata.unit}${value.toFixed(2)}` 
-             : metadata.unit === ' T'
-             ? `${value.toFixed(2)}${metadata.unit}`
+           const isPrefix = ['$', '₱'].includes(metadata.unit);
+           const formattedValue = isPrefix
+             ? `${metadata.unit}${value.toFixed(2)}`
              : `${value.toFixed(2)}${metadata.unit}`;
+
 
            return (
             <p key={entry.dataKey} style={{ color: metadata.color }} className="intro">
@@ -151,12 +151,23 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
               </React.Fragment>
             );
         })}
+        
+        {hasForecast && forecastStartIndex > 0 && (
+            <ReferenceLine
+                x={data[forecastStartIndex].month}
+                stroke="#e5e7eb"
+                strokeDasharray="3 3"
+                strokeWidth={2}
+            >
+                <Label value="Forecast Begins" position="insideTopLeft" fill="#9ca3af" fontSize={12} angle={-90} offset={10}/>
+            </ReferenceLine>
+        )}
 
         {hasForecast && (
             <ReferenceArea
                 x1={data[forecastStartIndex].month}
                 stroke="transparent"
-                fill="rgba(107, 114, 128, 0.2)"
+                fill="rgba(107, 114, 128, 0.3)"
                 ifOverflow="visible"
             >
                 <Label value="Forecast" position="insideTop" fill="#9ca3af" fontSize={12} />

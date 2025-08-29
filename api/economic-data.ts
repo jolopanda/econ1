@@ -15,7 +15,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: "Generate a dataset for key economic indicators for the Philippines. Provide historical data from February 2025 to July 2025, and then a forecast from August 2025 to July 2026. For each monthly data point, include a 'type' field which must be either 'Historical' or 'Forecast'. The indicators are: GDP Growth (%), Inflation Rate (%), Unemployment Rate (%), Bank Average Lending Rate (%), GDP in constant 2018 prices (in Trillion PHP), GNI Growth (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight Reverse Repurchase Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%). Provide the data month by month. Also, list the following as the data sources: \"Bangko Sentral ng Pilipinas (BSP) for rates: Bank Average Lending Rate, Inflation Rate, Peso-Dollar, Overnight RRP, Overnight Deposit Facility, Overnight Lending Facility\", \"Philippine Statistics Authority (PSA) for: GDP, GNI, Unemployment, Underemployment\", and \"U.S. Energy Information Administration (EIA) for: WTI Crude Oil\".",
+    contents: "Generate a dataset for key economic indicators for the Philippines, based on the provided list. Provide historical data from February 2025 to July 2025, and then a forecast from August 2025 to July 2026. For each monthly data point, include a 'type' field which must be either 'Historical' or 'Forecast'. The indicators are: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%). Provide the data month by month. Also, list the following as the data sources: \"Bangko Sentral ng Pilipinas (BSP) for rates: Bank Average Lending Rate, Inflation Rate, Peso-Dollar, Overnight RRP, Overnight Deposit Facility, Overnight Lending Facility\", \"Philippine Statistics Authority (PSA) for: GDP, Unemployment, Underemployment\", and \"U.S. Energy Information Administration (EIA) for: WTI Crude Oil\".",
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -29,20 +29,18 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
               properties: {
                 month: { type: Type.STRING, description: "The month and year, e.g., 'Feb 2025'" },
                 type: { type: Type.STRING, description: "The type of data, either 'Historical' or 'Forecast'." },
+                bankAverageLendingRate: { type: Type.NUMBER, description: "Projected Bank Average Lending Rate as a percentage." },
                 gdpGrowth: { type: Type.NUMBER, description: "Projected GDP Growth rate as a percentage." },
                 inflationRate: { type: Type.NUMBER, description: "Projected Inflation rate as a percentage." },
-                unemploymentRate: { type: Type.NUMBER, description: "Projected Unemployment rate as a percentage." },
-                lendingRate: { type: Type.NUMBER, description: "Projected Bank Average Lending Rate as a percentage." },
-                gdpConstant: { type: Type.NUMBER, description: "Projected GDP in constant 2018 prices, in Trillion PHP." },
-                gniGrowth: { type: Type.NUMBER, description: "Projected GNI Growth rate as a percentage." },
                 pesoDollarRate: { type: Type.NUMBER, description: "Projected Peso-Dollar Exchange Rate (PHP per USD) at the end of the period." },
                 underemploymentRate: { type: Type.NUMBER, description: "Projected Underemployment rate as a percentage." },
+                unemploymentRate: { type: Type.NUMBER, description: "Projected Unemployment rate as a percentage." },
                 wtiCrudeOil: { type: Type.NUMBER, description: "Projected WTI Crude Oil Price in USD per barrel." },
-                reverseRepoRate: { type: Type.NUMBER, description: "Projected Overnight Reverse Repurchase Rate as a percentage." },
-                depositFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Deposit Facility Rate as a percentage." },
-                lendingFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Lending Facility Rate as a percentage." },
+                overnightRrpRate: { type: Type.NUMBER, description: "Projected Overnight RRP Rate as a percentage." },
+                overnightDepositFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Deposit Facility Rate as a percentage." },
+                overnightLendingFacilityRate: { type: Type.NUMBER, description: "Projected Overnight Lending Facility Rate as a percentage." },
               },
-              required: ["month", "type", "gdpGrowth", "inflationRate", "unemploymentRate", "lendingRate", "gdpConstant", "gniGrowth", "pesoDollarRate", "underemploymentRate", "wtiCrudeOil", "reverseRepoRate", "depositFacilityRate", "lendingFacilityRate"],
+              required: ["month", "type", "bankAverageLendingRate", "gdpGrowth", "inflationRate", "pesoDollarRate", "underemploymentRate", "unemploymentRate", "wtiCrudeOil", "overnightRrpRate", "overnightDepositFacilityRate", "overnightLendingFacilityRate"],
             },
           },
           sources: {
