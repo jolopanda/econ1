@@ -18,8 +18,8 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
         <p className="label text-lg font-bold text-white">{`${label}`}</p>
         <p className="text-xs text-gray-400 mb-2">{dataType}</p>
         {payload.map((entry: any) => {
-           const key = entry.dataKey as IndicatorKey;
-           const metadata = INDICATORS_MAP[key];
+           const originalKey = entry.dataKey.replace(/_hist$|_fore$/, '') as IndicatorKey;
+           const metadata = INDICATORS_MAP[originalKey];
            if (!metadata || entry.value === null || entry.value === undefined) return null;
            
            const value = entry.value;
@@ -43,8 +43,36 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 };
 
 const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators }) => {
-  const forecastStartIndex = data.findIndex(d => d.type === 'Forecast');
-  const hasForecast = forecastStartIndex !== -1;
+  const { chartData, hasForecast, forecastStartIndex } = React.useMemo(() => {
+    const forecastIndex = data.findIndex(d => d.type === 'Forecast');
+    const hasForecastData = forecastIndex !== -1;
+
+    if (!hasForecastData) {
+        return { chartData: data, hasForecast: false, forecastStartIndex: -1 };
+    }
+
+    const transformedData = data.map((d, i) => {
+        const newPoint: any = { month: d.month, type: d.type };
+        // Transform all possible indicators to keep data structure consistent
+        for (const key of Object.keys(INDICATORS_MAP) as IndicatorKey[]) {
+            const value = d[key];
+            if (value !== undefined) {
+                if (i < forecastIndex) {
+                    newPoint[`${key}_hist`] = value;
+                } else {
+                    newPoint[`${key}_fore`] = value;
+                }
+                // To connect the lines, the transition point needs a value in both series
+                if (i === forecastIndex - 1) {
+                    newPoint[`${key}_fore`] = value;
+                }
+            }
+        }
+        return newPoint;
+    });
+
+    return { chartData: transformedData, hasForecast: true, forecastStartIndex: forecastIndex };
+  }, [data]);
 
   // --- Dual Y-Axis Logic ---
   const units = [...new Set(selectedIndicators.map(key => INDICATORS_MAP[key].unit))];
@@ -56,16 +84,10 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
     return 'left';
   };
   
-  const yAxisDomain = (dataMin: number, dataMax: number) => {
-    const absMax = Math.max(Math.abs(dataMin), Math.abs(dataMax));
-    const padding = absMax * 0.1 || 1; // Add padding, ensure it's not 0
-    return [Math.floor(dataMin - padding), Math.ceil(dataMax + padding)];
-  }
-
   return (
     <ResponsiveContainer width="100%" height={400}>
       <AreaChart
-        data={data}
+        data={chartData}
         margin={{
           top: 10,
           right: 10,
@@ -123,8 +145,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                 {/* Historical Data Area */}
                 <Area 
                     type="monotone" 
-                    dataKey={key} 
-                    data={data.map((d, i) => i >= forecastStartIndex && hasForecast ? { ...d, [key]: null } : d)}
+                    dataKey={hasForecast ? `${key}_hist` : key} 
                     name={indicator.name} 
                     stroke={indicator.color}
                     fillOpacity={1} 
@@ -136,8 +157,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                 {hasForecast && (
                   <Area 
                       type="monotone" 
-                      dataKey={key} 
-                      data={data.map((d, i) => i < forecastStartIndex -1 ? { ...d, [key]: null } : d)}
+                      dataKey={`${key}_fore`}
                       name={indicator.name} 
                       stroke={indicator.color}
                       strokeDasharray="5 5"
@@ -163,7 +183,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
             </ReferenceLine>
         )}
 
-        {hasForecast && (
+        {hasForecast && forecastStartIndex > 0 && (
             <ReferenceArea
                 x1={data[forecastStartIndex].month}
                 stroke="transparent"
