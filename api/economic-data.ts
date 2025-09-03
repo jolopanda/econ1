@@ -18,6 +18,8 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
     contents: `
       Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
 
+      **Prioritize primary sources for this data, such as the Bangko Sentral ng Pilipinas (BSP), the Philippine Statistics Authority (PSA), the Philippine Congress, the Asian Development Bank (ADB), and other official government and institutional websites.**
+
       Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of 12 monthly data points.
 
       **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or "type" field:**
