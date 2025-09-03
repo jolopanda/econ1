@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
 
 interface EconomicChartProps {
@@ -55,8 +55,8 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
       <AreaChart
         data={data}
         margin={{
-          top: 10,
-          right: 10,
+          top: 20,
+          right: 30,
           left: 10,
           bottom: 0,
         }}
@@ -95,6 +95,36 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
         
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ color: '#d1d5db' }} />
+
+        {/* --- ADDED REFERENCE LINES --- */}
+        {selectedIndicators.map(key => {
+            const indicator = INDICATORS_MAP[key];
+            if (indicator.threshold === undefined) {
+                return null;
+            }
+            const yAxisId = getAxisId(indicator.unit);
+            const labelValue = `Target: ${indicator.threshold}${indicator.unit}`;
+
+            return (
+                <ReferenceLine 
+                    key={`ref-${key}`}
+                    y={indicator.threshold}
+                    yAxisId={yAxisId}
+                    stroke={indicator.color}
+                    strokeDasharray="5 5"
+                    strokeWidth={1.5}
+                    ifOverflow="extendDomain"
+                >
+                    <Label
+                        value={labelValue}
+                        position="right"
+                        fill="#d1d5db"
+                        fontSize="12"
+                        style={{ transform: 'translateY(-10px)' }}
+                    />
+                </ReferenceLine>
+            );
+        })}
 
         {selectedIndicators.map(key => {
             const indicator = INDICATORS_MAP[key];
