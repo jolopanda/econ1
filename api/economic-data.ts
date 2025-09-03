@@ -16,21 +16,30 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Using Google Search, find the last 12 months of available historical data for the following economic indicators in the Philippines:
-      - Bank Average Lending Rate (%)
-      - GDP Growth (%)
-      - Inflation Rate (%)
-      - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
-      - Underemployment Rate (%)
-      - Unemployment Rate (%)
-      - WTI Crude Oil Price (USD per barrel)
-      - Overnight RRP Rate (%)
-      - Overnight Deposit Facility Rate (%)
-      - Overnight Lending Facility Rate (%)
+      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
 
-      Prioritize primary data from official sources like the Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), and Asian Development Bank (ADB).
+      Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of 12 monthly data points.
 
-      Return ONLY a single JSON object. This object must have a single key "data" that contains an array of 12 monthly data points. Each object in the array should have a "month" key and camelCase keys for each indicator (e.g., "bankAverageLendingRate", "gdpGrowth"). Do not include markdown formatting or any other text outside the JSON object.
+      **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or "type" field:**
+      \`\`\`json
+      {
+        "data": [
+          {
+            "month": "Jan 2025",
+            "bankAverageLendingRate": 5.5,
+            "gdpGrowth": 6.2,
+            "inflationRate": 3.1,
+            "pesoDollarRate": 58.5,
+            "underemploymentRate": 14.1,
+            "unemploymentRate": 4.5,
+            "wtiCrudeOil": 80.0,
+            "overnightRrpRate": 6.5,
+            "overnightDepositFacilityRate": 6.0,
+            "overnightLendingFacilityRate": 7.0
+          }
+        ]
+      }
+      \`\`\`
     `,
     config: {
       tools: [{ googleSearch: {} }],
