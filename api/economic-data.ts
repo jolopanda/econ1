@@ -1,4 +1,4 @@
-// This file represents a serverless function that runs on a backend (like Vercel).
+// This file represents a a serverless function that runs on a backend (like Vercel).
 // It securely uses the API key on the server and is not exposed to the client browser.
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
 
@@ -16,13 +16,9 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      You are an expert economic data analyst. Your task is to provide a dataset of key economic indicators for the Philippines.
+      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
 
-      1.  **Use Google Search** to find the most recent, official data for the following indicators: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
-
-      2.  Provide the **last 12 months of available historical data**.
-
-      3.  Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain the array of 12 monthly data points.
+      Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of 12 monthly data points.
 
       **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or "type" field:**
       \`\`\`json
