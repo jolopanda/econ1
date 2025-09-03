@@ -12,11 +12,6 @@ export interface EconomicIndicator {
   overnightLendingFacilityRate: number;
 }
 
-export interface Source {
-  title: string;
-  uri: string;
-}
-
 export type IndicatorKey = keyof Omit<EconomicIndicator, 'month'>;
 
 export interface IndicatorMetadata {

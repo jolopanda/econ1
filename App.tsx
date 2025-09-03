@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
 import { fetchEconomicData } from './services/geminiService';
-import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
+import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from './types';
 
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
-  const [sources, setSources] = useState<Source[] | null>(null);
+  const [sources, setSources] = useState<string[] | null>(null);
   const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([
     'gdpGrowth', 
     'inflationRate', 
@@ -182,19 +182,9 @@ const App: React.FC = () => {
         {sources && sources.length > 0 && (
           <section className="mt-8 text-gray-400 text-sm">
             <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
-            <ul className="list-disc list-inside space-y-2 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+            <ul className="list-disc list-inside bg-gray-800/50 p-4 rounded-lg border border-gray-700">
               {sources.map((source, index) => (
-                <li key={index} className="truncate">
-                  <a
-                    href={source.uri}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
-                    title={source.uri}
-                  >
-                    {source.title || source.uri}
-                  </a>
-                </li>
+                <li key={index}>{source}</li>
               ))}
             </ul>
           </section>
