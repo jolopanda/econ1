@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
 import { fetchEconomicData } from './services/geminiService';
-import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from './types';
+import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
-  const [sources, setSources] = useState<string[] | null>(null);
+  const [sources, setSources] = useState<Source[] | null>(null);
   const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([
     'gdpGrowth', 
     'inflationRate', 
@@ -177,19 +177,31 @@ const App: React.FC = () => {
           <div className="min-h-[400px] flex items-center justify-center">
             {renderContent()}
           </div>
+           {sources && sources.length > 0 && (
+            <section className="mt-6 border-t border-gray-700 pt-4 text-gray-400 text-sm">
+              <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
+              <ul className="space-y-1">
+                {sources.map((source) => (
+                  <li key={source.uri} className="truncate">
+                    <a
+                      href={source.uri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline hover:text-blue-300 transition-colors inline-flex items-center"
+                      title={source.uri}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      {source.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </main>
         
-        {sources && sources.length > 0 && (
-          <section className="mt-8 text-gray-400 text-sm">
-            <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
-            <ul className="list-disc list-inside bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-              {sources.map((source, index) => (
-                <li key={index}>{source}</li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         <footer className="text-center mt-8 text-gray-500 text-sm">
             <p>Data visualized with React & Recharts.</p>
         </footer>

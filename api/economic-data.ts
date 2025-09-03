@@ -3,10 +3,10 @@
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
 
 import { GoogleGenAI } from "@google/genai";
-import type { EconomicIndicator } from '../types';
+import type { EconomicIndicator, Source } from '../types';
 
 // The core logic for fetching data from the Gemini API
-async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: string[] }> {
+async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: Source[] }> {
   if (!process.env.API_KEY) {
     // This error is logged on the server, not shown to the user directly.
     throw new Error("API_KEY environment variable not set on the server.");
@@ -52,9 +52,17 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
   // Extract web sources from grounding metadata, format them, and remove duplicates.
-  const webSources = groundingMetadata?.groundingChunks
-    ?.map(chunk => (chunk.web && chunk.web.uri ? `${chunk.web.title} - ${chunk.web.uri}` : null))
-    .filter((item, index, self) => item && self.indexOf(item) === index) ?? [];
+  const webSources: Source[] = [];
+  if (groundingMetadata?.groundingChunks) {
+    const uniqueSources = new Map<string, Source>();
+    for (const chunk of groundingMetadata.groundingChunks) {
+        if (chunk.web?.uri && chunk.web?.title) {
+            // Use URI as the key to ensure uniqueness
+            uniqueSources.set(chunk.web.uri, { title: chunk.web.title, uri: chunk.web.uri });
+        }
+    }
+    webSources.push(...uniqueSources.values());
+  }
 
   // Robustly parse the JSON from the response text, which might be wrapped in markdown.
   let jsonText = response.text.trim();

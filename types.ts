@@ -20,6 +20,11 @@ export interface IndicatorMetadata {
   unit: string;
 }
 
+export interface Source {
+  title: string;
+  uri: string;
+}
+
 export const INDICATORS_MAP: Record<IndicatorKey, IndicatorMetadata> = {
   bankAverageLendingRate: { name: 'Bank Average Lending Rate', color: '#eab308', unit: '%' },
   gdpGrowth: { name: 'GDP Growth', color: '#22c55e', unit: '%' },

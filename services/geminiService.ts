@@ -1,6 +1,6 @@
-import type { EconomicIndicator } from '../types';
+import type { EconomicIndicator, Source } from '../types';
 
-export const fetchEconomicData = async (): Promise<{ data: EconomicIndicator[], sources: string[] }> => {
+export const fetchEconomicData = async (): Promise<{ data: EconomicIndicator[], sources: Source[] }> => {
   try {
     // This will call the serverless function located at /api/economic-data when deployed on Vercel.
     const response = await fetch('/api/economic-data');
