@@ -3,6 +3,44 @@ import EconomicChart from './components/EconomicChart';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
+// Helper to parse and format error messages for better UX
+const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
+  if (!error) {
+    return { title: 'An Unknown Error Occurred', message: 'An unexpected error occurred. Please try again.', isHtml: false };
+  }
+
+  // Handle specific, known error messages first
+  if (/API_KEY environment variable not set/i.test(error)) {
+    return {
+      title: 'Configuration Error',
+      message: 'The <code>API_KEY</code> is missing on the server. If you are the application owner, please go to your deployment platform (e.g., Vercel), add an Environment Variable named <code>API_KEY</code> with your Gemini API key, and then redeploy the application.',
+      isHtml: true,
+    };
+  }
+  
+  // Attempt to parse JSON from the error string to extract a cleaner message
+  const jsonMatch = error.match(/{.*}/s);
+  if (jsonMatch && jsonMatch[0]) {
+    try {
+      const errorObj = JSON.parse(jsonMatch[0]);
+      // Check for standard Gemini API error format or our serverless function's format
+      const message = errorObj?.error?.message || errorObj?.details || errorObj?.message;
+      if (message && typeof message === 'string') {
+        return { title: 'Error Fetching Data', message, isHtml: false };
+      }
+    } catch (e) {
+      // Parsing failed, fall through to default.
+    }
+  }
+
+  // Fallback to the original error if it's not a recognized format.
+  return {
+    title: 'Error Fetching Data',
+    message: error,
+    isHtml: false,
+  };
+};
+
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
   const [sources, setSources] = useState<Source[] | null>(null);
@@ -100,22 +138,23 @@ const App: React.FC = () => {
     }
 
     if (error) {
-      const isApiKeyError = /API_KEY environment variable not set/i.test(error);
+      const { title, message, isHtml } = getFriendlyErrorMessage(error);
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-red-900/20 border border-red-500 rounded-lg">
            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
            </svg>
-          <p className="text-xl font-semibold text-red-300">{isApiKeyError ? "Configuration Error" : "Error Fetching Data"}</p>
-          <p className="text-red-400 mt-2 max-w-2xl">
-            {isApiKeyError ? (
-              <>
-                The <code>API_KEY</code> is missing on the server. If you are the application owner, please go to your deployment platform (e.g., Vercel), add an Environment Variable named <code>API_KEY</code> with your Gemini API key, and then redeploy the application.
-              </>
-            ) : (
-              error
-            )}
-          </p>
+          <p className="text-xl font-semibold text-red-300">{title}</p>
+          {isHtml ? (
+            <p
+              className="text-red-400 mt-2 max-w-2xl"
+              dangerouslySetInnerHTML={{ __html: message }}
+            />
+          ) : (
+            <p className="text-red-400 mt-2 max-w-2xl">
+              {message}
+            </p>
+          )}
           <button
             onClick={loadData}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
