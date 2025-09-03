@@ -63,6 +63,13 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
     }
     webSources.push(...uniqueSources.values());
   }
+  
+  // CRITICAL: If Google Search is used, sources are required. If none are returned, it's an error.
+  if (webSources.length === 0) {
+    console.warn("Gemini API used Google Search but returned no grounding sources. This is treated as an error.");
+    throw new Error("The model failed to provide verifiable sources for the data. Please try again.");
+  }
+
 
   // Robustly parse the JSON from the response text, which might be wrapped in markdown.
   let jsonText = response.text.trim();
