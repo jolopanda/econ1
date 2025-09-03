@@ -17,9 +17,9 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines.
+      Task: Use Google Search to find the last 12 months of available historical data for key Philippine economic indicators.
 
-      Indicators:
+      Indicators to fetch:
       - Bank Average Lending Rate (%)
       - GDP Growth (%)
       - Inflation Rate (%)
@@ -30,29 +30,31 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
       - Overnight RRP Rate (%)
       - Overnight Deposit Facility Rate (%)
       - Overnight Lending Facility Rate (%)
-
-      Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of monthly data points.
-
-      **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or markdown formatting:**
-      \`\`\`json
+      
+      Output Instructions:
+      1. Your entire response MUST be a single, valid JSON object.
+      2. The JSON object must have a single root key called "data".
+      3. The value of "data" must be an array of objects, where each object represents a month.
+      4. Do NOT include any text, explanations, or markdown formatting outside of the JSON object.
+      
+      Example of the required JSON structure:
       {
         "data": [
           {
-            "month": "Jan 2025",
-            "bankAverageLendingRate": 5.5,
-            "gdpGrowth": 6.2,
-            "inflationRate": 3.1,
-            "pesoDollarRate": 58.5,
-            "underemploymentRate": 14.1,
-            "unemploymentRate": 4.5,
-            "wtiCrudeOil": 80.0,
+            "month": "YYYY-MM",
+            "bankAverageLendingRate": 7.1,
+            "gdpGrowth": 5.7,
+            "inflationRate": 3.9,
+            "pesoDollarRate": 58.65,
+            "underemploymentRate": 12.0,
+            "unemploymentRate": 4.0,
+            "wtiCrudeOil": 81.5,
             "overnightRrpRate": 6.5,
             "overnightDepositFacilityRate": 6.0,
             "overnightLendingFacilityRate": 7.0
           }
         ]
       }
-      \`\`\`
     `,
     config: {
       tools: [{ googleSearch: {} }],
@@ -73,13 +75,13 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
     webSources.push(...uniqueSources.values());
   }
 
-  // Robustly parse the JSON from the response text, which might be wrapped in markdown.
+  // Robustly parse the JSON from the response text.
   let jsonText = response.text.trim();
-  const jsonStart = jsonText.indexOf('```json');
-  const jsonEnd = jsonText.lastIndexOf('```');
+  const jsonStart = jsonText.indexOf('{');
+  const jsonEnd = jsonText.lastIndexOf('}');
 
   if (jsonStart !== -1 && jsonEnd > jsonStart) {
-    jsonText = jsonText.substring(jsonStart + 7, jsonEnd).trim();
+    jsonText = jsonText.substring(jsonStart, jsonEnd + 1).trim();
   }
 
   try {
