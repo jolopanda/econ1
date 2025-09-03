@@ -28,12 +28,9 @@ const App: React.FC = () => {
       setSources(sources);
 
       if (sortedData && sortedData.length > 0) {
-        const forecastStart = sortedData.find(d => d.type === 'Forecast');
         const firstMonth = sortedData[0].month;
         const lastMonth = sortedData[sortedData.length - 1].month;
-        const lastHistoricalMonth = forecastStart ? sortedData[sortedData.findIndex(d => d.type === 'Forecast') - 1].month : lastMonth;
-        
-        setDateRange(`Data from ${firstMonth} to ${lastHistoricalMonth} & Forecast until ${lastMonth}`);
+        setDateRange(`Displaying data from ${firstMonth} to ${lastMonth}`);
       }
 
     } catch (err) {
@@ -62,13 +59,12 @@ const App: React.FC = () => {
     }
 
     // Create Headers
-    const headers = ['Month', 'Type', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
 
     // Create Rows
     const rows = allData.map(row => {
       const values = [
         `"${row.month}"`,
-        `"${row.type}"`,
         ...selectedIndicators.map(key => row[key])
       ];
       return values.join(',');
@@ -79,7 +75,7 @@ const App: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'philippine-economic-trends.csv');
+    link.setAttribute('download', 'philippine-economic-data.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -96,8 +92,8 @@ const App: React.FC = () => {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="text-xl font-semibold text-gray-300">Loading Outlook...</p>
-          <p className="text-gray-400 mt-2">Fetching data...</p>
+          <p className="text-xl font-semibold text-gray-300">Loading Economic Data...</p>
+          <p className="text-gray-400 mt-2">Fetching historical data...</p>
         </div>
       );
     }
@@ -141,10 +137,10 @@ const App: React.FC = () => {
       <div className="w-full max-w-7xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
-            Economic Outlook
+            Philippine Economic Data
           </h1>
           <p className="mt-2 text-lg text-gray-400">
-            {dateRange || 'Historical Data and Future Outlook'}
+            {dateRange || 'Historical Economic Indicators'}
           </p>
         </header>
 

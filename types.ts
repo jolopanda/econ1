@@ -10,10 +10,9 @@ export interface EconomicIndicator {
   overnightRrpRate: number;
   overnightDepositFacilityRate: number;
   overnightLendingFacilityRate: number;
-  type: 'Historical' | 'Forecast';
 }
 
-export type IndicatorKey = keyof Omit<EconomicIndicator, 'month' | 'type'>;
+export type IndicatorKey = keyof Omit<EconomicIndicator, 'month'>;
 
 export interface IndicatorMetadata {
   name: string;

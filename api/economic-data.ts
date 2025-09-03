@@ -20,21 +20,16 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
       1.  **Use Google Search** to find the most recent, official data for the following indicators: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
 
-      2.  Provide the **last 6 months of available historical data**. Label each of these data points with \`"type": "Historical"\`.
+      2.  Provide the **last 12 months of available historical data**.
 
-      3.  Based on the historical data, generate a **forecast for the next 12 months**. Label each of these data points with \`"type": "Forecast"\`.
+      3.  Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain the array of 12 monthly data points.
 
-      4.  Combine both historical and forecast data into a single array, ordered chronologically.
-
-      5.  Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain the array of 18 monthly data points.
-
-      **Crucially, the JSON output must strictly follow this structure, with no extra text or explanations:**
+      **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or "type" field:**
       \`\`\`json
       {
         "data": [
           {
             "month": "Jan 2025",
-            "type": "Historical",
             "bankAverageLendingRate": 5.5,
             "gdpGrowth": 6.2,
             "inflationRate": 3.1,
