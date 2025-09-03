@@ -26,7 +26,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
       4.  Combine both historical and forecast data into a single array, ordered chronologically.
 
-      5.  Format your entire response as a single JSON object with two keys: \`data\` and \`sources\`. The \`data\` key should contain the array of 18 monthly data points. The \`sources\` key should be an empty array \`[]\`.
+      5.  Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain the array of 18 monthly data points.
 
       **Crucially, the JSON output must strictly follow this structure, with no extra text or explanations:**
       \`\`\`json
@@ -46,8 +46,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
             "overnightDepositFacilityRate": 6.0,
             "overnightLendingFacilityRate": 7.0
           }
-        ],
-        "sources": []
+        ]
       }
       \`\`\`
     `,
@@ -60,17 +59,34 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   // Extract web sources from grounding metadata, format them, and remove duplicates.
   const webSources = groundingMetadata?.groundingChunks
     ?.map(chunk => (chunk.web && chunk.web.uri ? `${chunk.web.title} - ${chunk.web.uri}` : null))
-    .filter((item, index, self) => item && self.indexOf(item) === index);
+    .filter((item, index, self) => item && self.indexOf(item) === index) ?? [];
 
-  const jsonText = response.text.trim().replace(/^```json\n|```$/g, '');
-  const result = JSON.parse(jsonText);
-  
-  if (result && Array.isArray(result.data)) {
-    // Replace the sources from the model with the more reliable ones from grounding metadata.
-    result.sources = webSources || [];
-    return result;
-  } else {
-    throw new Error("Parsed data from Gemini is not in the expected format.");
+  // Robustly parse the JSON from the response text, which might be wrapped in markdown.
+  let jsonText = response.text.trim();
+  const jsonStart = jsonText.indexOf('```json');
+  const jsonEnd = jsonText.lastIndexOf('```');
+
+  if (jsonStart !== -1 && jsonEnd > jsonStart) {
+    jsonText = jsonText.substring(jsonStart + 7, jsonEnd).trim();
+  }
+
+  try {
+    const parsedResult = JSON.parse(jsonText);
+    
+    if (parsedResult && Array.isArray(parsedResult.data)) {
+      // Construct the final object with data from the model and sources from grounding.
+      return {
+        data: parsedResult.data,
+        sources: webSources,
+      };
+    } else {
+      console.error("Parsed JSON does not match expected structure. Parsed object:", parsedResult);
+      throw new Error("Parsed data from Gemini is not in the expected format.");
+    }
+  } catch (error) {
+    console.error("Failed to parse JSON from Gemini response. Raw text:", response.text);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
+    throw new Error(`Failed to parse JSON from the AI's response. Details: ${errorMessage}`);
   }
 }
 
