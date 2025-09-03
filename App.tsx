@@ -201,29 +201,41 @@ const App: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {(Object.keys(INDICATORS_MAP) as IndicatorKey[]).map(key => {
+                  const indicator = INDICATORS_MAP[key];
                   const isChecked = selectedIndicators.includes(key);
-                  const indicatorColor = INDICATORS_MAP[key].color;
                   return (
-                    <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleIndicatorChange(key)}
-                        className="sr-only"
-                      />
-                      <span
-                        className="h-4 w-4 rounded-sm flex items-center justify-center transition-colors"
-                        style={{ backgroundColor: isChecked ? indicatorColor : '#FFFFFF' }}
-                        aria-hidden="true"
-                      >
-                        {isChecked && (
-                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </span>
-                      <span className="text-sm text-gray-300">{INDICATORS_MAP[key].name}</span>
-                    </label>
+                    <div key={key} className="flex items-center space-x-1.5">
+                      <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors flex-grow">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleIndicatorChange(key)}
+                          className="sr-only"
+                        />
+                        <span
+                          className="h-4 w-4 rounded-sm flex items-center justify-center transition-colors flex-shrink-0"
+                          style={{ backgroundColor: isChecked ? indicator.color : '#FFFFFF' }}
+                          aria-hidden="true"
+                        >
+                          {isChecked && (
+                            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="text-sm text-gray-300">{indicator.name}</span>
+                      </label>
+                      {indicator.thresholdDescription && (
+                         <div className="relative group flex-shrink-0">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                           </svg>
+                           <div className="absolute bottom-full mb-2 w-64 p-2 bg-gray-900 border border-gray-600 text-gray-300 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 -translate-x-1/2 left-1/2">
+                             <span className="font-bold">Target Explanation:</span> {indicator.thresholdDescription}
+                           </div>
+                         </div>
+                      )}
+                    </div>
                   );
               })}
             </div>
