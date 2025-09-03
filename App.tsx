@@ -245,10 +245,10 @@ const App: React.FC = () => {
           </div>
            {sources && !isLoading && sources.length > 0 && (
             <section className="mt-6 border-t border-gray-700 pt-4 text-gray-400 text-sm">
-              <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
+              <h3 className="font-semibold text-gray-300 mb-2">Official Data Sources</h3>
                 <ul className="space-y-1">
                   {sources.map((source) => (
-                    <li key={source.uri} className="truncate">
+                    <li key={source.uri}>
                       <a
                         href={source.uri}
                         target="_blank"
