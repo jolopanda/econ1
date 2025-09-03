@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setSources(null); // Reset sources on new load
     try {
       const { data, sources } = await fetchEconomicData();
       
@@ -160,44 +161,62 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {(Object.keys(INDICATORS_MAP) as IndicatorKey[]).map(key => (
-                <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={selectedIndicators.includes(key)}
-                    onChange={() => handleIndicatorChange(key)}
-                    className="form-checkbox h-5 w-5 rounded transition duration-150 ease-in-out"
-                    style={{ accentColor: INDICATORS_MAP[key].color }}
-                  />
-                  <span className="text-sm text-gray-300">{INDICATORS_MAP[key].name}</span>
-                </label>
-              ))}
+              {(Object.keys(INDICATORS_MAP) as IndicatorKey[]).map(key => {
+                  const isChecked = selectedIndicators.includes(key);
+                  const indicatorColor = INDICATORS_MAP[key].color;
+                  return (
+                    <label key={key} className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleIndicatorChange(key)}
+                        className="sr-only"
+                      />
+                      <span
+                        className="h-4 w-4 rounded-sm flex items-center justify-center transition-colors"
+                        style={{ backgroundColor: isChecked ? indicatorColor : '#FFFFFF' }}
+                        aria-hidden="true"
+                      >
+                        {isChecked && (
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-sm text-gray-300">{INDICATORS_MAP[key].name}</span>
+                    </label>
+                  );
+              })}
             </div>
           </div>
           <div className="min-h-[400px] flex items-center justify-center">
             {renderContent()}
           </div>
-           {sources && sources.length > 0 && (
+           {sources && !isLoading && (
             <section className="mt-6 border-t border-gray-700 pt-4 text-gray-400 text-sm">
               <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
-              <ul className="space-y-1">
-                {sources.map((source) => (
-                  <li key={source.uri} className="truncate">
-                    <a
-                      href={source.uri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline hover:text-blue-300 transition-colors inline-flex items-center"
-                      title={source.uri}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      {source.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              {sources.length > 0 ? (
+                <ul className="space-y-1">
+                  {sources.map((source) => (
+                    <li key={source.uri} className="truncate">
+                      <a
+                        href={source.uri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline hover:text-blue-300 transition-colors inline-flex items-center"
+                        title={source.uri}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        {source.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                 <p>No specific sources were provided by the model for this dataset.</p>
+              )}
             </section>
           )}
         </main>

@@ -37,10 +37,13 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 };
 
 const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators }) => {
-  // --- Dual Y-Axis Logic ---
+  // --- Dual Y-Axis & Stacking Logic ---
   const units = [...new Set(selectedIndicators.map(key => INDICATORS_MAP[key].unit))];
   const yAxis1Unit = units[0];
   const yAxis2Unit = units.length > 1 ? units[1] : null;
+
+  // Stack charts only if all selected indicators share the same unit.
+  const isStackable = units.length <= 1;
 
   const getAxisId = (unit: string) => {
     if (unit === yAxis2Unit) return 'right';
@@ -64,7 +67,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                 return (
                   <linearGradient key={`grad-${key}`} id={`color-${key}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={indicator.color} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={indicator.color} stopOpacity={0}/>
+                      <stop offset="95%" stopColor={indicator.color} stopOpacity={0.2}/>
                   </linearGradient>
                 );
             })}
@@ -108,6 +111,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                   fill={`url(#color-${key})`} 
                   yAxisId={yAxisId}
                   connectNulls
+                  stackId={isStackable ? "1" : key}
               />
             );
         })}
