@@ -1,3 +1,4 @@
+
 // This file represents a a serverless function that runs on a backend (like Vercel).
 // It securely uses the API key on the server and is not exposed to the client browser.
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
@@ -16,11 +17,23 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines: Bank Average Lending Rate (%), GDP Growth (%), Inflation Rate (%), Peso-Dollar Exchange Rate (PHP per USD, End of Period), Underemployment Rate (%), Unemployment Rate (%), WTI Crude Oil Price (USD per barrel), Overnight RRP Rate (%), Overnight Deposit Facility Rate (%), and Overnight Lending Facility Rate (%).
+      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines. Prioritize primary sources like the Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), and other official government and institutional sources.
 
-      Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of 12 monthly data points.
+      Indicators:
+      - Bank Average Lending Rate (%)
+      - GDP Growth (%)
+      - Inflation Rate (%)
+      - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
+      - Underemployment Rate (%)
+      - Unemployment Rate (%)
+      - WTI Crude Oil Price (USD per barrel)
+      - Overnight RRP Rate (%)
+      - Overnight Deposit Facility Rate (%)
+      - Overnight Lending Facility Rate (%)
 
-      **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or "type" field:**
+      Format your entire response as a single JSON object with a single key: \`data\`. The \`data\` key must contain an array of monthly data points.
+
+      **Crucially, the JSON output must strictly follow this structure, with no extra text, explanations, or markdown formatting:**
       \`\`\`json
       {
         "data": [
