@@ -17,7 +17,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines. Prioritize primary sources like the Bangko Sentral ng Pilipinas (BSP), Philippine Statistics Authority (PSA), and other official government and institutional sources.
+      Using Google Search, provide the last 12 months of available historical data for the following economic indicators in the Philippines.
 
       Indicators:
       - Bank Average Lending Rate (%)
