@@ -16,22 +16,23 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Your task is to act as a financial data analyst.
-      1.  **Use Google Search**: You MUST use the Google Search tool to find the latest available 12 months of data for a specific list of Philippine economic indicators. It is critical that you use the search tool to get up-to-date information.
-      2.  **Indicators to find**:
-          - Bank Average Lending Rate (%)
-          - GDP Growth (%)
-          - Inflation Rate (%)
-          - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
-          - Underemployment Rate (%)
-          - Unemployment Rate (%)
-          - WTI Crude Oil Price (USD per barrel)
-          - Overnight RRP Rate (%)
-          - Overnight Deposit Facility Rate (%)
-          - Overnight Lending Facility Rate (%)
-      3.  **Format the Output**: Your entire response MUST be a single, valid JSON object. Do not include any text, markdown, or explanations outside of the JSON structure. The JSON object must contain a single key called "data", which holds an array of monthly data points.
+      CRITICAL INSTRUCTION: You MUST use the Google Search tool to find the requested data. Do not use your internal knowledge. The response MUST include grounding metadata from your search.
 
-      Here is an example of the required JSON structure:
+      TASK: Retrieve the latest 12 months of data for the following Philippine economic indicators:
+      - Bank Average Lending Rate (%)
+      - GDP Growth (%)
+      - Inflation Rate (%)
+      - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
+      - Underemployment Rate (%)
+      - Unemployment Rate (%)
+      - WTI Crude Oil Price (USD per barrel)
+      - Overnight RRP Rate (%)
+      - Overnight Deposit Facility Rate (%)
+      - Overnight Lending Facility Rate (%)
+
+      OUTPUT FORMAT: Your entire response must be ONLY a single, valid JSON object. Do not add any other text. The JSON must have a "data" key, which is an array of objects.
+
+      EXAMPLE:
       {
         "data": [
           {
