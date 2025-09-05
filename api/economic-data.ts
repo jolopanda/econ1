@@ -16,22 +16,22 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Using Google Search, find the last 12 months of data for these Philippine economic indicators:
-      - Bank Average Lending Rate (%)
-      - GDP Growth (%)
-      - Inflation Rate (%)
-      - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
-      - Underemployment Rate (%)
-      - Unemployment Rate (%)
-      - WTI Crude Oil Price (USD per barrel)
-      - Overnight RRP Rate (%)
-      - Overnight Deposit Facility Rate (%)
-      - Overnight Lending Facility Rate (%)
+      Your task is to act as a financial data analyst.
+      1.  **Use Google Search**: You MUST use the Google Search tool to find the latest available 12 months of data for a specific list of Philippine economic indicators. It is critical that you use the search tool to get up-to-date information.
+      2.  **Indicators to find**:
+          - Bank Average Lending Rate (%)
+          - GDP Growth (%)
+          - Inflation Rate (%)
+          - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
+          - Underemployment Rate (%)
+          - Unemployment Rate (%)
+          - WTI Crude Oil Price (USD per barrel)
+          - Overnight RRP Rate (%)
+          - Overnight Deposit Facility Rate (%)
+          - Overnight Lending Facility Rate (%)
+      3.  **Format the Output**: Your entire response MUST be a single, valid JSON object. Do not include any text, markdown, or explanations outside of the JSON structure. The JSON object must contain a single key called "data", which holds an array of monthly data points.
 
-      Your entire output MUST be only a single, valid JSON object. The JSON should contain one key, "data", which is an array of monthly data points.
-      Do not add any other text, comments, or markdown formatting outside of the JSON.
-
-      Example JSON structure:
+      Here is an example of the required JSON structure:
       {
         "data": [
           {
