@@ -1,4 +1,3 @@
-
 // This file represents a a serverless function that runs on a backend (like Vercel).
 // It securely uses the API key on the server and is not exposed to the client browser.
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
@@ -17,9 +16,7 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-      Task: Use Google Search to find the last 12 months of available historical data for key Philippine economic indicators.
-
-      Indicators to fetch:
+      Using Google Search, find the last 12 months of data for these Philippine economic indicators:
       - Bank Average Lending Rate (%)
       - GDP Growth (%)
       - Inflation Rate (%)
@@ -30,14 +27,11 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
       - Overnight RRP Rate (%)
       - Overnight Deposit Facility Rate (%)
       - Overnight Lending Facility Rate (%)
-      
-      Output Instructions:
-      1. Your entire response MUST be a single, valid JSON object.
-      2. The JSON object must have a single root key called "data".
-      3. The value of "data" must be an array of objects, where each object represents a month.
-      4. Do NOT include any text, explanations, or markdown formatting outside of the JSON object.
-      
-      Example of the required JSON structure:
+
+      Your entire output MUST be only a single, valid JSON object. The JSON should contain one key, "data", which is an array of monthly data points.
+      Do not add any other text, comments, or markdown formatting outside of the JSON.
+
+      Example JSON structure:
       {
         "data": [
           {
