@@ -15,42 +15,44 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: `
-      CRITICAL INSTRUCTION: You MUST use the Google Search tool to find the requested data. Do not use your internal knowledge. The response MUST include grounding metadata from your search.
+    contents: `You are an AI assistant specialized in retrieving financial data.
+      
+Your task is to find the most recent 12 months of data for several key economic indicators for the Philippines.
+      
+**Crucially, you must use the Google Search tool for this task.** The data must be grounded in real-world sources. Your response must include the grounding metadata from your searches so the user can verify the information.
+      
+The indicators to retrieve are:
+- Bank Average Lending Rate (%)
+- GDP Growth (%)
+- Inflation Rate (%)
+- Peso-Dollar Exchange Rate (PHP per USD, End of Period)
+- Underemployment Rate (%)
+- Unemployment Rate (%)
+- WTI Crude Oil Price (USD per barrel)
+- Overnight RRP Rate (%)
+- Overnight Deposit Facility Rate (%)
+- Overnight Lending Facility Rate (%)
 
-      TASK: Retrieve the latest 12 months of data for the following Philippine economic indicators:
-      - Bank Average Lending Rate (%)
-      - GDP Growth (%)
-      - Inflation Rate (%)
-      - Peso-Dollar Exchange Rate (PHP per USD, End of Period)
-      - Underemployment Rate (%)
-      - Unemployment Rate (%)
-      - WTI Crude Oil Price (USD per barrel)
-      - Overnight RRP Rate (%)
-      - Overnight Deposit Facility Rate (%)
-      - Overnight Lending Facility Rate (%)
-
-      OUTPUT FORMAT: Your entire response must be ONLY a single, valid JSON object. Do not add any other text. The JSON must have a "data" key, which is an array of objects.
-
-      EXAMPLE:
-      {
-        "data": [
-          {
-            "month": "YYYY-MM",
-            "bankAverageLendingRate": 7.1,
-            "gdpGrowth": 5.7,
-            "inflationRate": 3.9,
-            "pesoDollarRate": 58.65,
-            "underemploymentRate": 12.0,
-            "unemploymentRate": 4.0,
-            "wtiCrudeOil": 81.5,
-            "overnightRrpRate": 6.5,
-            "overnightDepositFacilityRate": 6.0,
-            "overnightLendingFacilityRate": 7.0
-          }
-        ]
-      }
-    `,
+Please format your entire output as a single, valid JSON object, and nothing else. The JSON object must contain a "data" key, which should be an array of objects, where each object represents a month.
+      
+Here is an example of the required structure for a single month's data:
+{
+  "data": [
+    {
+      "month": "YYYY-MM",
+      "bankAverageLendingRate": 7.1,
+      "gdpGrowth": 5.7,
+      "inflationRate": 3.9,
+      "pesoDollarRate": 58.65,
+      "underemploymentRate": 12.0,
+      "unemploymentRate": 4.0,
+      "wtiCrudeOil": 81.5,
+      "overnightRrpRate": 6.5,
+      "overnightDepositFacilityRate": 6.0,
+      "overnightLendingFacilityRate": 7.0
+    }
+  ]
+}`,
     config: {
       tools: [{ googleSearch: {} }],
     },
