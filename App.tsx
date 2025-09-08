@@ -58,6 +58,28 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
+  const [loadingMessage, setLoadingMessage] = useState<string>('Initializing forecast...');
+
+  // Effect for cycling through loading messages
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const messages = [
+      'Fetching latest market data...',
+      'Generating economic forecast with Gemini...',
+      'Analyzing recent trends...',
+      'Verifying data sources from the web...',
+      'Compiling indicators...',
+    ];
+
+    let messageIndex = 0;
+    const intervalId = setInterval(() => {
+      messageIndex = (messageIndex + 1) % messages.length;
+      setLoadingMessage(messages[messageIndex]);
+    }, 2000); // Change message every 2 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
+  }, [isLoading]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -128,8 +150,8 @@ const App: React.FC = () => {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="text-xl font-semibold text-gray-300">Loading Economic Data...</p>
-          <p className="text-gray-400 mt-2">Generating forecast and verifying sources from the web...</p>
+          <p className="text-xl font-semibold text-gray-300">{loadingMessage}</p>
+          <p className="text-gray-400 mt-2">This may take a moment as we gather the latest information.</p>
         </div>
       );
     }
