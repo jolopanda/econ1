@@ -167,7 +167,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Controls */}
+          {/* Column 1: Controls */}
           <aside className="lg:col-span-3">
             <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
               <IndicatorSelector
@@ -179,18 +179,23 @@ const App: React.FC = () => {
             </div>
           </aside>
 
-          {/* Right Column: Chart and Sources */}
-          <main className="lg:col-span-9">
+          {/* Column 2: Chart */}
+          <main className="lg:col-span-6">
             <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
               <div className="min-h-[420px]">
                 {renderContent()}
               </div>
             </section>
-
-            {sources && sources.length > 0 && !isLoading && !error && (
-              <SourceList sources={sources} />
-            )}
           </main>
+
+          {/* Column 3: Sources */}
+          <aside className="lg:col-span-3">
+             {sources && sources.length > 0 && !isLoading && !error && (
+              <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
+                <SourceList sources={sources} />
+              </div>
+            )}
+          </aside>
         </div>
         
         <footer className="text-center mt-8 text-gray-500 text-sm">

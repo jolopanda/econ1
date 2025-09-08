@@ -46,13 +46,15 @@ const IndicatorSelector: React.FC<IndicatorSelectorProps> = ({
                 />
                 <span
                   className="h-5 w-5 rounded-md flex items-center justify-center transition-all duration-200 ring-1 ring-offset-2 ring-offset-gray-800"
+                  // FIX: Cast the style object to `React.CSSProperties` to resolve the TypeScript error
+                  // for using a CSS custom property ('--tw-ring-color').
                   style={{ 
                     backgroundColor: isChecked ? indicator.color : 'transparent',
                     borderColor: indicator.color,
                     // Fix: 'ringColor' is not a valid CSS property. To dynamically control Tailwind's ring color,
                     // we set the '--tw-ring-color' CSS custom property that Tailwind uses under the hood.
                     '--tw-ring-color': isChecked ? indicator.color : 'transparent'
-                  }}
+                  } as React.CSSProperties}
                   aria-hidden="true"
                 >
                   {isChecked && (
