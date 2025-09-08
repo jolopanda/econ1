@@ -6,6 +6,13 @@ import SourceList from './components/SourceList';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
+// Define primary, trusted sources to show by default.
+const PRIMARY_SOURCES: Source[] = [
+  { title: 'Bangko Sentral ng Pilipinas (BSP)', uri: 'https://www.bsp.gov.ph/' },
+  { title: 'Philippine Statistics Authority (PSA)', uri: 'https://psa.gov.ph/' },
+  { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
+];
+
 // Helper to parse and format error messages for better UX
 const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
   if (!error) {
@@ -42,7 +49,7 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
-  const [sources, setSources] = useState<Source[] | null>(null);
+  const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
   const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([
     'gdpGrowth', 
     'inflationRate', 
@@ -55,13 +62,16 @@ const App: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setSources(null);
     try {
-      const { data, sources } = await fetchEconomicData();
+      const { data, sources: fetchedSources } = await fetchEconomicData();
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setAllData(sortedData);
-      setSources(sources);
+      
+      // Combine primary and fetched sources, ensuring no duplicates.
+      const combinedSources = [...PRIMARY_SOURCES, ...fetchedSources];
+      const uniqueSources = Array.from(new Map(combinedSources.map(s => [s.uri, s])).values());
+      setSources(uniqueSources);
 
       if (sortedData && sortedData.length > 0) {
         const firstMonth = sortedData[0].month;
@@ -119,7 +129,7 @@ const App: React.FC = () => {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <p className="text-xl font-semibold text-gray-300">Loading Economic Data...</p>
-          <p className="text-gray-400 mt-2">Fetching and verifying sources from the web...</p>
+          <p className="text-gray-400 mt-2">Generating forecast and verifying sources from the web...</p>
         </div>
       );
     }
@@ -190,7 +200,7 @@ const App: React.FC = () => {
 
           {/* Column 3: Sources */}
           <aside className="lg:col-span-3">
-             {sources && sources.length > 0 && !isLoading && !error && (
+             {sources && sources.length > 0 && (
               <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
                 <SourceList sources={sources} />
               </div>
