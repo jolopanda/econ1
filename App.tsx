@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
+import IndicatorSelector from './components/IndicatorSelector';
+import SourceList from './components/SourceList';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
@@ -10,7 +12,6 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
     return { title: 'An Unknown Error Occurred', message: 'An unexpected error occurred. Please try again.', isHtml: false };
   }
 
-  // Handle specific, known error messages first
   if (/API_KEY environment variable not set/i.test(error)) {
     return {
       title: 'Configuration Error',
@@ -19,12 +20,10 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
     };
   }
   
-  // Attempt to parse JSON from the error string to extract a cleaner message
   const jsonMatch = error.match(/{.*}/s);
   if (jsonMatch && jsonMatch[0]) {
     try {
       const errorObj = JSON.parse(jsonMatch[0]);
-      // Check for standard Gemini API error format or our serverless function's format
       const message = errorObj?.error?.message || errorObj?.details || errorObj?.message;
       if (message && typeof message === 'string') {
         return { title: 'Error Fetching Data', message, isHtml: false };
@@ -34,7 +33,6 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
     }
   }
 
-  // Fallback to the original error if it's not a recognized format.
   return {
     title: 'Error Fetching Data',
     message: error,
@@ -57,11 +55,9 @@ const App: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setSources(null); // Reset sources on new load
+    setSources(null);
     try {
       const { data, sources } = await fetchEconomicData();
-      
-      // Sort the data by month to ensure the chart renders correctly
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setAllData(sortedData);
@@ -70,7 +66,7 @@ const App: React.FC = () => {
       if (sortedData && sortedData.length > 0) {
         const firstMonth = sortedData[0].month;
         const lastMonth = sortedData[sortedData.length - 1].month;
-        setDateRange(`Displaying data from ${firstMonth} to ${lastMonth}`);
+        setDateRange(`Data from ${firstMonth} to ${lastMonth}`);
       }
 
     } catch (err) {
@@ -94,19 +90,11 @@ const App: React.FC = () => {
   };
 
   const handleExportCSV = useCallback(() => {
-    if (!allData || selectedIndicators.length === 0) {
-      return;
-    }
+    if (!allData || selectedIndicators.length === 0) return;
 
-    // Create Headers
     const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
-
-    // Create Rows
     const rows = allData.map(row => {
-      const values = [
-        `"${row.month}"`,
-        ...selectedIndicators.map(key => row[key])
-      ];
+      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key])];
       return values.join(',');
     });
 
@@ -116,162 +104,94 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', 'philippine-economic-data.csv');
-    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }, [allData, selectedIndicators]);
 
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+          <svg className="animate-spin h-10 w-10 text-blue-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-xl font-semibold text-gray-300">Loading Economic Data...</p>
+          <p className="text-gray-400 mt-2">Fetching and verifying sources from the web...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      const { title, message, isHtml } = getFriendlyErrorMessage(error);
+      return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8 bg-red-900/20 border border-red-500 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-xl font-semibold text-red-300">{title}</p>
+          {isHtml ? (
+            <p className="text-red-400 mt-2 max-w-2xl" dangerouslySetInnerHTML={{ __html: message }} />
+          ) : (
+            <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
+          )}
+          <button
+            onClick={loadData}
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    if (allData) {
+      return <EconomicChart data={allData} selectedIndicators={selectedIndicators} />;
+    }
+
+    return null;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8 flex flex-col items-center">
-      <div className="w-full max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-screen-2xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
-            Philippine Economic Data
+            Philippine Economic Outlook
           </h1>
           <p className="mt-2 text-lg text-gray-400">
-            {dateRange || 'Historical Economic Indicators'}
+            {dateRange || 'Visualizing Key Economic Indicators'}
           </p>
         </header>
 
-        <main className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-gray-200">Select Indicators to Display:</h2>
-              <button
-                onClick={handleExportCSV}
-                disabled={!allData || selectedIndicators.length === 0}
-                className="flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-500 disabled:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-colors text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export CSV
-              </button>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Controls */}
+          <aside className="lg:col-span-3">
+            <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
+              <IndicatorSelector
+                selectedIndicators={selectedIndicators}
+                onIndicatorChange={handleIndicatorChange}
+                onExportCSV={handleExportCSV}
+                isExportDisabled={!allData || selectedIndicators.length === 0}
+              />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {(Object.keys(INDICATORS_MAP) as IndicatorKey[]).map(key => {
-                  const indicator = INDICATORS_MAP[key];
-                  const isChecked = selectedIndicators.includes(key);
-                  return (
-                    <div key={key} className="flex items-center space-x-1.5">
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors flex-grow">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleIndicatorChange(key)}
-                          className="sr-only"
-                        />
-                        <span
-                          className="h-4 w-4 rounded-sm flex items-center justify-center transition-colors flex-shrink-0"
-                          style={{ backgroundColor: isChecked ? indicator.color : '#FFFFFF' }}
-                          aria-hidden="true"
-                        >
-                          {isChecked && (
-                            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </span>
-                        <span className="text-sm text-gray-300">{indicator.name}</span>
-                      </label>
-                      {indicator.thresholdDescription && (
-                         <div className="relative group flex-shrink-0">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                           </svg>
-                           <div className="absolute bottom-full mb-2 w-64 p-2 bg-gray-900 border border-gray-600 text-gray-300 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 -translate-x-1/2 left-1/2">
-                             <span className="font-bold">Target Explanation:</span> {indicator.thresholdDescription}
-                           </div>
-                         </div>
-                      )}
-                    </div>
-                  );
-              })}
-            </div>
-          </div>
-          
-          <div className="min-h-[400px]">
-            {isLoading ? (
-               <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <svg className="animate-spin h-10 w-10 text-blue-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p className="text-xl font-semibold text-gray-300">Loading Economic Data...</p>
-                  <p className="text-gray-400 mt-2">Fetching and verifying sources...</p>
-                </div>
-            ) : error ? (
-                (() => {
-                    const { title, message, isHtml } = getFriendlyErrorMessage(error);
-                    return (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-red-900/20 border border-red-500 rounded-lg">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                           </svg>
-                          <p className="text-xl font-semibold text-red-300">{title}</p>
-                          {isHtml ? (
-                            <p
-                              className="text-red-400 mt-2 max-w-2xl"
-                              dangerouslySetInnerHTML={{ __html: message }}
-                            />
-                          ) : (
-                            <p className="text-red-400 mt-2 max-w-2xl">
-                              {message}
-                            </p>
-                          )}
-                          <button
-                            onClick={loadData}
-                            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
-                          >
-                            Retry
-                          </button>
-                        </div>
-                    );
-                })()
-            ) : allData ? (
-              <>
-                <EconomicChart data={allData} selectedIndicators={selectedIndicators} />
-                {sources && sources.length > 0 && (
-                  <section className="mt-8 border-t border-gray-700 pt-6">
-                    <h3 className="text-lg font-bold text-gray-100 mb-4">Data Sources</h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {sources.map((source) => {
-                        let hostname = 'unknown source';
-                        try {
-                           hostname = new URL(source.uri).hostname.replace(/^www\./, '');
-                        } catch (e) {
-                          console.error("Invalid source URI:", source.uri);
-                        }
-                        
-                        return (
-                          <li key={source.uri}>
-                            <a
-                              href={source.uri}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block p-4 rounded-lg bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 hover:border-gray-600 transition-all duration-300 group h-full"
-                              title={source.uri}
-                            >
-                              <div className="flex justify-between items-start">
-                                <span className="font-semibold text-blue-400 group-hover:text-blue-300 pr-2">{source.title}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 group-hover:text-gray-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1 truncate">{hostname}</p>
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </section>
-                )}
-              </>
-            ) : null}
-          </div>
-        </main>
+          </aside>
+
+          {/* Right Column: Chart and Sources */}
+          <main className="lg:col-span-9">
+            <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
+              <div className="min-h-[420px]">
+                {renderContent()}
+              </div>
+            </section>
+
+            {sources && sources.length > 0 && !isLoading && !error && (
+              <SourceList sources={sources} />
+            )}
+          </main>
+        </div>
         
         <footer className="text-center mt-8 text-gray-500 text-sm">
             <p>Data visualized with React & Recharts.</p>
