@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
 
 interface EconomicChartProps {
@@ -37,13 +37,10 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 };
 
 const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators }) => {
-  // --- Dual Y-Axis & Stacking Logic ---
+  // --- Dual Y-Axis Logic ---
   const units = [...new Set(selectedIndicators.map(key => INDICATORS_MAP[key].unit))];
   const yAxis1Unit = units[0];
   const yAxis2Unit = units.length > 1 ? units[1] : null;
-
-  // Stack charts only if all selected indicators share the same unit.
-  const isStackable = units.length <= 1;
 
   const getAxisId = (unit: string) => {
     if (unit === yAxis2Unit) return 'right';
@@ -52,7 +49,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
   
   return (
     <ResponsiveContainer width="100%" height={400}>
-      <AreaChart
+      <LineChart
         data={data}
         margin={{
           top: 20,
@@ -61,17 +58,6 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
           bottom: 0,
         }}
       >
-        <defs>
-            {selectedIndicators.map(key => {
-                const indicator = INDICATORS_MAP[key];
-                return (
-                  <linearGradient key={`grad-${key}`} id={`color-${key}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={indicator.color} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={indicator.color} stopOpacity={0.2}/>
-                  </linearGradient>
-                );
-            })}
-        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#4b5563" />
         <XAxis dataKey="month" stroke="#d1d5db" />
 
@@ -131,21 +117,21 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
             const yAxisId = getAxisId(indicator.unit);
             
             return (
-              <Area 
+              <Line 
                   key={key}
                   type="monotone" 
                   dataKey={key} 
                   name={indicator.name} 
                   stroke={indicator.color}
-                  fillOpacity={1} 
-                  fill={`url(#color-${key})`} 
+                  strokeWidth={2}
                   yAxisId={yAxisId}
                   connectNulls
-                  stackId={isStackable ? "1" : key}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 2, fill: indicator.color }}
               />
             );
         })}
-      </AreaChart>
+      </LineChart>
     </ResponsiveContainer>
   );
 };
