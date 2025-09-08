@@ -15,13 +15,11 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: `You are an AI assistant specialized in retrieving financial data.
-      
-Your task is to find the most recent 12 months of data for several key economic indicators for the Philippines.
-      
-**Crucially, you must use the Google Search tool for this task.** The data must be grounded in real-world sources. Your response must include the grounding metadata from your searches so the user can verify the information.
-      
-The indicators to retrieve are:
+    contents: `Your task is to act as a financial data aggregator.
+Use the Google Search tool to find the most recent 12 months of available data for the following key economic indicators for the Philippines.
+The response **must** be grounded on the search results.
+
+Indicators:
 - Bank Average Lending Rate (%)
 - GDP Growth (%)
 - Inflation Rate (%)
@@ -33,9 +31,11 @@ The indicators to retrieve are:
 - Overnight Deposit Facility Rate (%)
 - Overnight Lending Facility Rate (%)
 
-Please format your entire output as a single, valid JSON object, and nothing else. The JSON object must contain a "data" key, which should be an array of objects, where each object represents a month.
-      
-Here is an example of the required structure for a single month's data:
+Format the output as a single, valid JSON object. Do not include any other text or explanations.
+The JSON object must have a "data" key, which is an array of objects. Each object represents one month and contains all the indicators.
+Ensure that the grounding metadata from your web searches is included in the API response.
+
+Example structure for one month:
 {
   "data": [
     {
