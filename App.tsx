@@ -245,26 +245,38 @@ const App: React.FC = () => {
             {renderContent()}
           </div>
            {sources && !isLoading && sources.length > 0 && (
-            <section className="mt-6 border-t border-gray-700 pt-4 text-gray-400 text-sm">
-              <h3 className="font-semibold text-gray-300 mb-2">Data Sources</h3>
-                <ul className="space-y-1">
-                  {sources.map((source) => (
+            <section className="mt-8 border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-gray-100 mb-4">Data Sources</h3>
+              <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sources.map((source) => {
+                  let hostname = 'unknown source';
+                  try {
+                     hostname = new URL(source.uri).hostname.replace(/^www\./, '');
+                  } catch (e) {
+                    console.error("Invalid source URI:", source.uri);
+                  }
+                  
+                  return (
                     <li key={source.uri}>
                       <a
                         href={source.uri}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline hover:text-blue-300 transition-colors inline-flex items-start"
+                        className="block p-4 rounded-lg bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 hover:border-gray-600 transition-all duration-300 group h-full"
                         title={source.uri}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        <span>{source.title}</span>
+                        <div className="flex justify-between items-start">
+                          <span className="font-semibold text-blue-400 group-hover:text-blue-300 pr-2">{source.title}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 group-hover:text-gray-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 truncate">{hostname}</p>
                       </a>
                     </li>
-                  ))}
-                </ul>
+                  );
+                })}
+              </ul>
             </section>
           )}
         </main>
