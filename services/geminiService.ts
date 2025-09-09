@@ -29,7 +29,7 @@ export const fetchEconomicData = async (): Promise<{ data: EconomicIndicator[], 
     console.error("Error fetching economic data:", error);
     if (error instanceof Error) {
         // Re-throw the error with a more user-friendly context.
-        throw new Error(`An error occurred while fetching the economic forecast: ${error.message}`);
+        throw new Error(`An error occurred while fetching the economic data: ${error.message}`);
     }
     throw new Error("An unknown error occurred while fetching data.");
   }
