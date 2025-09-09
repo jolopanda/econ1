@@ -1,4 +1,3 @@
-
 // This file represents a a serverless function that runs on a backend (like Vercel).
 // It securely uses the API key on the server and is not exposed to the client browser.
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
@@ -11,27 +10,36 @@ import { INDICATORS_MAP } from '../types'; // Import the map to access names and
 const createDynamicPrompt = (indicators: IndicatorKey[]): string => {
     const indicatorList = indicators.map(key => {
         const meta = INDICATORS_MAP[key];
-        return `- ${meta.name} (${meta.unit === '₱' ? 'PHP per USD' : meta.unit})`
+        return `- ${meta.name} (key: "${key}")`;
     }).join('\n');
 
-    const exampleFields = indicators.map(key => `"${key}": 12.3`).join(',\n  ');
+    const exampleFields = indicators.map(key => `"${key}": 12.3`).join(',\n    ');
 
     return `
-**Primary Directive: Use Google Search to find verifiable economic data for the Philippines.**
-
-Your role is a financial data analyst. You **MUST** use the Google Search tool to gather the most recent 12 months of available data for these specific indicators in the Philippines:
+You are a financial data analyst API. Your task is to use Google Search to find the most recent 12 months of economic data for the Philippines for the following indicators:
 ${indicatorList}
 
-**Output Requirements:**
-1.  The output **MUST** be a single, valid JSON object. Do not add any text, markdown, or explanations before or after the JSON.
-2.  The JSON object must have a single top-level key: "data".
-3.  The "data" key must contain an array of objects, where each object represents one month of data. Each object should only contain the keys for the requested indicators.
-4.  **Crucially, all data must be sourced from your Google Search results.** The API response must include the grounding metadata from your searches. Do not use internal or pre-existing knowledge.
+**RESPONSE FORMAT INSTRUCTIONS:**
+- Your entire response **MUST** be a single, raw, valid JSON object.
+- Do **NOT** wrap the JSON in markdown backticks (\`\`\`) or any other text.
+- The JSON object must have one root key: "data".
+- The "data" value must be an array of objects, one for each month.
+- Each object in the array must have a "month" key in "YYYY-MM" format and keys for the requested indicators.
+- Use the provided keys (e.g., "gdpGrowth") in the output.
+- If data for a specific indicator in a specific month is not available, omit the key or set its value to null.
 
-Example for one object in the "data" array:
+**EXAMPLE RESPONSE STRUCTURE:**
 {
-  "month": "YYYY-MM",
-  ${exampleFields}
+  "data": [
+    {
+      "month": "2023-07",
+      ${exampleFields}
+    },
+    {
+      "month": "2023-08",
+      ${exampleFields}
+    }
+  ]
 }
 `;
 };
@@ -55,6 +63,7 @@ async function getEconomicData(indicators: IndicatorKey[]): Promise<{ data: Econ
     model: "gemini-2.5-flash",
     contents: prompt,
     config: {
+      systemInstruction: "You are an expert financial data analyst API. Your sole purpose is to retrieve economic data using Google Search and return it in the exact JSON format specified in the prompt. You must not include any conversational text or markdown formatting in your response.",
       tools: [{ googleSearch: {} }],
     },
   });
