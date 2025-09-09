@@ -25,14 +25,28 @@ async function getEconomicData(indicators: IndicatorKey[]): Promise<{ data: Econ
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   // Dynamically generate the list of indicators for the prompt.
-  const indicatorNames = indicators.map(key => INDICATORS_MAP[key].name).join('\n- ');
-  const indicatorKeys = indicators.map(key => `"${key}"`); // for the example
+  const indicatorNames = indicators.map(key => INDICATORS_MAP[key].name).join(', ');
 
+  const prompt = `
+    TASK:
+    Act as a data retrieval API. Use Google Search to find verifiable economic data for the Philippines for the last 12 full calendar months.
+
+    INDICATORS TO FETCH:
+    - ${indicatorNames}
+
+    OUTPUT REQUIREMENTS:
+    - Respond with ONLY a raw JSON object matching the provided schema.
+    - Do not include any introductory text, explanations, or markdown formatting.
+    - The 'month' property must be in 'YYYY-MM' format.
+    - If data for a specific month/indicator is not found, use a 'null' value for that key.
+    - Ensure all data is from verifiable sources discovered via Google Search.
+  `;
+  
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: `Use Google Search to find the most recent 12 months of verifiable economic data for these specific indicators in the Philippines:\n- ${indicatorNames}`,
+    contents: prompt,
     config: {
-      systemInstruction: `You are a data API. Your sole purpose is to retrieve verifiable economic data using the Google Search tool and return it in the specified JSON format. You MUST NOT add any conversational text, markdown, or explanations. The response must be only the raw JSON object. Use your search results for all data points; do not use pre-existing knowledge. If data for a specific month is unavailable for an indicator, use a null value.`,
+      systemInstruction: `You are a data API. Your only function is to return valid JSON based on the user's request and the provided schema. Use the Google Search tool extensively and do not add any conversational text.`,
       tools: [{ googleSearch: {} }],
       responseMimeType: "application/json",
       responseSchema: {
@@ -68,7 +82,11 @@ async function getEconomicData(indicators: IndicatorKey[]): Promise<{ data: Econ
   }
 
   try {
-    const parsedResult = JSON.parse(response.text);
+    const rawText = response.text;
+    if (!rawText) {
+        throw new Error("The AI returned an empty response.");
+    }
+    const parsedResult = JSON.parse(rawText);
     if (parsedResult && Array.isArray(parsedResult.data)) {
       return {
         data: parsedResult.data,
