@@ -15,11 +15,10 @@ async function getEconomicData(): Promise<{ data: EconomicIndicator[], sources: 
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: `Your task is to act as a financial data aggregator.
-Use the Google Search tool to find the most recent 12 months of available data for the following key economic indicators for the Philippines.
-The response **must** be grounded on the search results.
+    contents: `
+**Primary Directive: Use Google Search to find verifiable economic data for the Philippines.**
 
-Indicators:
+Your role is a financial data analyst. You **MUST** use the Google Search tool to gather the most recent 12 months of available data for these specific indicators in the Philippines:
 - Bank Average Lending Rate (%)
 - GDP Growth (%)
 - Inflation Rate (%)
@@ -31,28 +30,27 @@ Indicators:
 - Overnight Deposit Facility Rate (%)
 - Overnight Lending Facility Rate (%)
 
-Format the output as a single, valid JSON object. Do not include any other text or explanations.
-The JSON object must have a "data" key, which is an array of objects. Each object represents one month and contains all the indicators.
-Ensure that the grounding metadata from your web searches is included in the API response.
+**Output Requirements:**
+1.  The output **MUST** be a single, valid JSON object. Do not add any text, markdown, or explanations before or after the JSON.
+2.  The JSON object must have a single top-level key: "data".
+3.  The "data" key must contain an array of objects, where each object represents one month of data.
+4.  **Crucially, all data must be sourced from your Google Search results.** The API response must include the grounding metadata from your searches. Do not use internal or pre-existing knowledge.
 
-Example structure for one month:
+Example for one object in the "data" array:
 {
-  "data": [
-    {
-      "month": "YYYY-MM",
-      "bankAverageLendingRate": 7.1,
-      "gdpGrowth": 5.7,
-      "inflationRate": 3.9,
-      "pesoDollarRate": 58.65,
-      "underemploymentRate": 12.0,
-      "unemploymentRate": 4.0,
-      "wtiCrudeOil": 81.5,
-      "overnightRrpRate": 6.5,
-      "overnightDepositFacilityRate": 6.0,
-      "overnightLendingFacilityRate": 7.0
-    }
-  ]
-}`,
+  "month": "YYYY-MM",
+  "bankAverageLendingRate": 7.1,
+  "gdpGrowth": 5.7,
+  "inflationRate": 3.9,
+  "pesoDollarRate": 58.65,
+  "underemploymentRate": 12.0,
+  "unemploymentRate": 4.0,
+  "wtiCrudeOil": 81.5,
+  "overnightRrpRate": 6.5,
+  "overnightDepositFacilityRate": 6.0,
+  "overnightLendingFacilityRate": 7.0
+}
+`,
     config: {
       tools: [{ googleSearch: {} }],
     },
