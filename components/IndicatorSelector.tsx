@@ -71,7 +71,7 @@ const IndicatorSelector: React.FC<IndicatorSelectorProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                    </svg>
                    <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-gray-900 border border-gray-600 text-gray-300 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-                     <span className="font-bold text-white">Target Explained:</span> {indicator.thresholdDescription}
+                     <span className="font-bold text-white">Outlook Threshold Explained:</span> {indicator.thresholdDescription}
                    </div>
                  </div>
               )}

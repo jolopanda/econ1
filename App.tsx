@@ -58,7 +58,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
-  const [loadingMessage, setLoadingMessage] = useState<string>('Initializing forecast...');
+  const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
 
   // Effect for cycling through loading messages
   useEffect(() => {
@@ -66,7 +66,6 @@ const App: React.FC = () => {
 
     const messages = [
       'Fetching latest market data...',
-      'Generating economic forecast with Gemini...',
       'Analyzing recent trends...',
       'Verifying data sources from the web...',
       'Compiling indicators...',
@@ -74,8 +73,8 @@ const App: React.FC = () => {
 
     let messageIndex = 0;
     const intervalId = setInterval(() => {
-      messageIndex = (messageIndex + 1) % messages.length;
       setLoadingMessage(messages[messageIndex]);
+      messageIndex = (messageIndex + 1) % messages.length;
     }, 2000); // Change message every 2 seconds
 
     return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
@@ -84,6 +83,7 @@ const App: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setLoadingMessage('Fetching latest market data...');
     try {
       const { data, sources: fetchedSources } = await fetchEconomicData();
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
@@ -230,8 +230,14 @@ const App: React.FC = () => {
           </aside>
         </div>
         
-        <footer className="text-center mt-8 text-gray-500 text-sm">
-            <p>Data visualized with React & Recharts.</p>
+        <footer className="text-center mt-12 py-6 border-t border-gray-800 text-gray-500 text-sm">
+            <div className="max-w-4xl mx-auto px-4">
+                <p className="leading-relaxed">
+                This application presents a dynamic economic outlook for the Philippines. 
+                Data is gathered from the web in real-time using Google's Gemini model to ensure the latest information is available.
+                The visualization is built with <a href="https://react.dev/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 underline transition-colors">React</a> & <a href="https://recharts.org/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 underline transition-colors">Recharts</a>.
+                </p>
+            </div>
         </footer>
       </div>
     </div>

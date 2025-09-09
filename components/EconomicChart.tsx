@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
@@ -89,7 +90,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                 return null;
             }
             const yAxisId = getAxisId(indicator.unit);
-            const labelValue = `Target: ${indicator.threshold}${indicator.unit}`;
+            const labelValue = `Outlook Threshold: ${indicator.threshold}${indicator.unit}`;
 
             return (
                 <ReferenceLine 
@@ -126,8 +127,8 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
                   strokeWidth={2}
                   yAxisId={yAxisId}
                   connectNulls
-                  dot={false}
-                  activeDot={{ r: 6, strokeWidth: 2, fill: indicator.color }}
+                  dot={{ r: 3, fill: indicator.color, stroke: '#1f2937', strokeWidth: 2 }}
+                  activeDot={{ r: 8, strokeWidth: 2, fill: indicator.color, stroke: '#f9fafb' }}
               />
             );
         })}
