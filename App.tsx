@@ -55,20 +55,21 @@ const App: React.FC = () => {
     'inflationRate', 
     'unemploymentRate'
   ]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
+  const [hasGenerated, setHasGenerated] = useState<boolean>(false);
 
   // Effect for cycling through loading messages
   useEffect(() => {
     if (!isLoading) return;
 
     const messages = [
-      'Fetching latest market data...',
-      'Analyzing recent trends...',
-      'Verifying data sources from the web...',
-      'Compiling indicators...',
+      'Querying Google for the latest data...',
+      'Analyzing economic trends...',
+      'Cross-referencing sources...',
+      'Compiling your report...',
     ];
 
     let messageIndex = 0;
@@ -80,17 +81,20 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
   }, [isLoading]);
 
-  const loadData = useCallback(async () => {
+  const handleGenerateReport = useCallback(async () => {
+    if (selectedIndicators.length === 0) return;
+    
     setIsLoading(true);
     setError(null);
-    setLoadingMessage('Fetching latest market data...');
+    setLoadingMessage('Querying Google for the latest data...');
+    setHasGenerated(true);
+
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData();
+      const { data, sources: fetchedSources } = await fetchEconomicData(selectedIndicators);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setAllData(sortedData);
       
-      // Combine primary and fetched sources, ensuring no duplicates.
       const combinedSources = [...PRIMARY_SOURCES, ...fetchedSources];
       const uniqueSources = Array.from(new Map(combinedSources.map(s => [s.uri, s])).values());
       setSources(uniqueSources);
@@ -106,12 +110,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedIndicators]);
   
   const handleIndicatorChange = (indicatorKey: IndicatorKey) => {
     setSelectedIndicators(prev => 
@@ -170,7 +169,7 @@ const App: React.FC = () => {
             <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
           )}
           <button
-            onClick={loadData}
+            onClick={handleGenerateReport}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
           >
             Retry
@@ -179,11 +178,21 @@ const App: React.FC = () => {
       );
     }
 
-    if (allData) {
+    if (hasGenerated && allData) {
       return <EconomicChart data={allData} selectedIndicators={selectedIndicators} />;
     }
 
-    return null;
+    return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-200">Welcome to the Economic Outlook Dashboard</h3>
+            <p className="text-gray-400 mt-2 max-w-md">
+                Select one or more indicators from the left panel and click "Generate Report" to visualize the latest economic data.
+            </p>
+        </div>
+    );
   };
 
   return (
@@ -194,7 +203,7 @@ const App: React.FC = () => {
             Philippine Economic Outlook
           </h1>
           <p className="mt-2 text-lg text-gray-400">
-            {dateRange || 'Visualizing Key Economic Indicators'}
+            {dateRange || 'On-Demand Economic Indicator Visualization'}
           </p>
         </header>
 
@@ -207,6 +216,8 @@ const App: React.FC = () => {
                 onIndicatorChange={handleIndicatorChange}
                 onExportCSV={handleExportCSV}
                 isExportDisabled={!allData || selectedIndicators.length === 0}
+                onGenerateReport={handleGenerateReport}
+                isGenerating={isLoading}
               />
             </div>
           </aside>
