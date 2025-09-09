@@ -1,20 +1,9 @@
+import type { EconomicIndicator, Source } from '../types';
 
-import type { EconomicIndicator, IndicatorKey, Source } from '../types';
-
-export const fetchEconomicData = async (indicators: IndicatorKey[]): Promise<{ data: EconomicIndicator[], sources: Source[] }> => {
-  if (!indicators || indicators.length === 0) {
-    return { data: [], sources: [] };
-  }
-  
+export const fetchEconomicData = async (): Promise<{ data: EconomicIndicator[], sources: Source[] }> => {
   try {
-    // This will call the serverless function located at /api/economic-data
-    const response = await fetch('/api/economic-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ indicators }),
-    });
+    // This will call the serverless function located at /api/economic-data when deployed on Vercel.
+    const response = await fetch('/api/economic-data');
 
     if (!response.ok) {
       let errorMessage = `API request failed with status: ${response.status}`;
