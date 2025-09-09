@@ -13,6 +13,12 @@ const PRIMARY_SOURCES: Source[] = [
   { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
 ];
 
+const INITIAL_INDICATORS: IndicatorKey[] = [
+  'gdpGrowth', 
+  'inflationRate', 
+  'unemploymentRate'
+];
+
 // Helper to parse and format error messages for better UX
 const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
   if (!error) {
@@ -48,77 +54,98 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 };
 
 const App: React.FC = () => {
-  const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
+  const [allData, setAllData] = useState<EconomicIndicator[]>([]);
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
-  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([
-    'gdpGrowth', 
-    'inflationRate', 
-    'unemploymentRate'
-  ]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>(INITIAL_INDICATORS);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // For initial page load
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
-  const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
+  
+  // State for on-demand indicator fetching
+  const [fetchingIndicators, setFetchingIndicators] = useState<IndicatorKey[]>([]);
+  const [fetchedIndicators, setFetchedIndicators] = useState<Set<IndicatorKey>>(new Set());
 
-  // Effect for cycling through loading messages
-  useEffect(() => {
-    if (!isLoading) return;
+  // Data merging logic
+  const mergeData = (existingData: EconomicIndicator[], newData: Partial<EconomicIndicator>[], keysToMerge: IndicatorKey[]) => {
+      const dataMap = new Map<string, EconomicIndicator>(existingData.map(item => [item.month, item]));
 
-    const messages = [
-      'Fetching latest market data...',
-      'Analyzing recent trends...',
-      'Verifying data sources from the web...',
-      'Compiling indicators...',
-    ];
+      newData.forEach(newPoint => {
+          if (!newPoint.month) return;
+          const entry = dataMap.get(newPoint.month) || { month: newPoint.month } as EconomicIndicator;
+          keysToMerge.forEach(key => {
+              if (newPoint[key] !== undefined) {
+                  (entry as any)[key] = newPoint[key];
+              }
+          });
+          dataMap.set(newPoint.month, entry);
+      });
 
-    let messageIndex = 0;
-    const intervalId = setInterval(() => {
-      setLoadingMessage(messages[messageIndex]);
-      messageIndex = (messageIndex + 1) % messages.length;
-    }, 2000); // Change message every 2 seconds
+      const fullData = Array.from(dataMap.values());
+      return fullData.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+  };
+  
+  const fetchIndicatorData = useCallback(async (keys: IndicatorKey[]) => {
+    // Prevent fetching if already fetched or currently fetching
+    const indicatorsToFetch = keys.filter(k => !fetchedIndicators.has(k) && !fetchingIndicators.includes(k));
+    if (indicatorsToFetch.length === 0) return;
 
-    return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
-  }, [isLoading]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    setLoadingMessage('Fetching latest market data...');
+    setFetchingIndicators(prev => [...prev, ...indicatorsToFetch]);
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData();
-      const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-      
-      setAllData(sortedData);
-      
-      // Combine primary and fetched sources, ensuring no duplicates.
-      const combinedSources = [...PRIMARY_SOURCES, ...fetchedSources];
-      const uniqueSources = Array.from(new Map(combinedSources.map(s => [s.uri, s])).values());
-      setSources(uniqueSources);
+        const { data: newData, sources: newSources } = await fetchEconomicData(indicatorsToFetch);
+        
+        setAllData(prevData => mergeData(prevData, newData, indicatorsToFetch));
+        
+        // Combine and de-duplicate sources
+        setSources(prevSources => {
+            const combined = [...prevSources, ...newSources];
+            return Array.from(new Map(combined.map(s => [s.uri, s])).values());
+        });
 
-      if (sortedData && sortedData.length > 0) {
-        const firstMonth = sortedData[0].month;
-        const lastMonth = sortedData[sortedData.length - 1].month;
-        setDateRange(`Data from ${firstMonth} to ${lastMonth}`);
-      }
+        // Update cache
+        setFetchedIndicators(prev => new Set([...prev, ...indicatorsToFetch]));
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+        setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching indicator data.');
+        // Rollback selection on error
+        setSelectedIndicators(prev => prev.filter(k => !indicatorsToFetch.includes(k)));
     } finally {
-      setIsLoading(false);
+        setFetchingIndicators(prev => prev.filter(k => !indicatorsToFetch.includes(k)));
     }
-  }, []);
+  }, [fetchedIndicators, fetchingIndicators]);
 
+  // Initial data load effect
   useEffect(() => {
-    loadData();
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      setError(null);
+      await fetchIndicatorData(INITIAL_INDICATORS);
+      setIsLoading(false);
+    };
+    loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Run only once on mount
+
+  // Effect to update the date range display when data changes
+  useEffect(() => {
+    if (allData && allData.length > 0) {
+        const firstMonth = allData[0].month;
+        const lastMonth = allData[allData.length - 1].month;
+        setDateRange(`Data from ${firstMonth} to ${lastMonth}`);
+      }
+  }, [allData]);
   
   const handleIndicatorChange = (indicatorKey: IndicatorKey) => {
-    setSelectedIndicators(prev => 
-      prev.includes(indicatorKey)
-        ? prev.filter(item => item !== indicatorKey)
-        : [...prev, indicatorKey]
-    );
+    const isCurrentlySelected = selectedIndicators.includes(indicatorKey);
+    const newSelected = isCurrentlySelected
+      ? selectedIndicators.filter(item => item !== indicatorKey)
+      : [...selectedIndicators, indicatorKey];
+      
+    setSelectedIndicators(newSelected);
+
+    // If a new indicator was added, fetch its data
+    if (!isCurrentlySelected) {
+      fetchIndicatorData([indicatorKey]);
+    }
   };
 
   const handleExportCSV = useCallback(() => {
@@ -126,7 +153,7 @@ const App: React.FC = () => {
 
     const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
     const rows = allData.map(row => {
-      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key])];
+      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -150,13 +177,13 @@ const App: React.FC = () => {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="text-xl font-semibold text-gray-300">{loadingMessage}</p>
-          <p className="text-gray-400 mt-2">This may take a moment as we gather the latest information.</p>
+          <p className="text-xl font-semibold text-gray-300">Fetching initial economic data...</p>
+          <p className="text-gray-400 mt-2">This may take a moment.</p>
         </div>
       );
     }
 
-    if (error) {
+    if (error && allData.length === 0) {
       const { title, message, isHtml } = getFriendlyErrorMessage(error);
       return (
         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8 bg-red-900/20 border border-red-500 rounded-lg">
@@ -169,12 +196,6 @@ const App: React.FC = () => {
           ) : (
             <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
           )}
-          <button
-            onClick={loadData}
-            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
-          >
-            Retry
-          </button>
         </div>
       );
     }
@@ -207,6 +228,7 @@ const App: React.FC = () => {
                 onIndicatorChange={handleIndicatorChange}
                 onExportCSV={handleExportCSV}
                 isExportDisabled={!allData || selectedIndicators.length === 0}
+                fetchingIndicators={fetchingIndicators}
               />
             </div>
           </aside>
