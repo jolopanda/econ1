@@ -50,12 +50,8 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
-  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([
-    'gdpGrowth', 
-    'inflationRate', 
-    'unemploymentRate'
-  ]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
@@ -80,12 +76,16 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
   }, [isLoading]);
 
-  const loadData = useCallback(async () => {
+  const handleFetchData = useCallback(async () => {
+    if (selectedIndicators.length === 0) {
+      return;
+    }
     setIsLoading(true);
     setError(null);
+    setAllData(null); // Clear previous data
     setLoadingMessage('Fetching latest market data...');
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData();
+      const { data, sources: fetchedSources } = await fetchEconomicData(selectedIndicators);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setAllData(sortedData);
@@ -106,12 +106,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedIndicators]);
   
   const handleIndicatorChange = (indicatorKey: IndicatorKey) => {
     setSelectedIndicators(prev => 
@@ -126,7 +121,7 @@ const App: React.FC = () => {
 
     const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
     const rows = allData.map(row => {
-      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key])];
+      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -170,7 +165,7 @@ const App: React.FC = () => {
             <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
           )}
           <button
-            onClick={loadData}
+            onClick={handleFetchData}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
           >
             Retry
@@ -178,12 +173,22 @@ const App: React.FC = () => {
         </div>
       );
     }
-
+    
     if (allData) {
       return <EconomicChart data={allData} selectedIndicators={selectedIndicators} />;
     }
 
-    return null;
+    return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-300">Visualize Economic Data</h3>
+            <p className="text-gray-400 mt-2 max-w-sm">
+                Select one or more indicators from the left panel and click "Fetch Data" to generate a chart.
+            </p>
+        </div>
+    );
   };
 
   return (
@@ -205,8 +210,10 @@ const App: React.FC = () => {
               <IndicatorSelector
                 selectedIndicators={selectedIndicators}
                 onIndicatorChange={handleIndicatorChange}
+                onFetchData={handleFetchData}
+                isFetchDisabled={selectedIndicators.length === 0 || isLoading}
                 onExportCSV={handleExportCSV}
-                isExportDisabled={!allData || selectedIndicators.length === 0}
+                isExportDisabled={!allData || selectedIndicators.length === 0 || isLoading}
               />
             </div>
           </aside>
@@ -222,7 +229,7 @@ const App: React.FC = () => {
 
           {/* Column 3: Sources */}
           <aside className="lg:col-span-3">
-             {sources && sources.length > 0 && (
+             {allData && sources && sources.length > 0 && (
               <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
                 <SourceList sources={sources} />
               </div>

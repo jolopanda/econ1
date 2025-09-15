@@ -5,6 +5,8 @@ import { INDICATORS_MAP, IndicatorKey } from '../types';
 interface IndicatorSelectorProps {
   selectedIndicators: IndicatorKey[];
   onIndicatorChange: (key: IndicatorKey) => void;
+  onFetchData: () => void;
+  isFetchDisabled: boolean;
   onExportCSV: () => void;
   isExportDisabled: boolean;
 }
@@ -12,6 +14,8 @@ interface IndicatorSelectorProps {
 const IndicatorSelector: React.FC<IndicatorSelectorProps> = ({
   selectedIndicators,
   onIndicatorChange,
+  onFetchData,
+  isFetchDisabled,
   onExportCSV,
   isExportDisabled,
 }) => {
@@ -79,6 +83,20 @@ const IndicatorSelector: React.FC<IndicatorSelectorProps> = ({
           );
         })}
       </div>
+      
+      <div className="mt-6">
+        <button
+          onClick={onFetchData}
+          disabled={isFetchDisabled}
+          className="w-full flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Fetch Data
+        </button>
+      </div>
+
     </div>
   );
 };
