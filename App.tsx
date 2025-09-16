@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
-import IndicatorSelector from './components/IndicatorSelector';
 import SourceList from './components/SourceList';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
@@ -12,6 +11,9 @@ const PRIMARY_SOURCES: Source[] = [
   { title: 'Philippine Statistics Authority (PSA)', uri: 'https://psa.gov.ph/' },
   { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
 ];
+
+// Get all available indicator keys from the map.
+const allIndicatorKeys = Object.keys(INDICATORS_MAP) as IndicatorKey[];
 
 // Helper to parse and format error messages for better UX
 const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
@@ -50,8 +52,7 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 const App: React.FC = () => {
   const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
-  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading immediately
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
@@ -76,16 +77,14 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
   }, [isLoading]);
 
-  const handleFetchData = useCallback(async () => {
-    if (selectedIndicators.length === 0) {
-      return;
-    }
+  const loadAllData = useCallback(async () => {
+    // This function will now be called on mount to fetch all data.
     setIsLoading(true);
     setError(null);
     setAllData(null); // Clear previous data
     setLoadingMessage('Fetching latest market data...');
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData(selectedIndicators);
+      const { data, sources: fetchedSources } = await fetchEconomicData(allIndicatorKeys);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setAllData(sortedData);
@@ -106,22 +105,19 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedIndicators]);
+  }, []); // Empty dependency array as it doesn't depend on any props/state
+
+  // Fetch data on initial component mount.
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
   
-  const handleIndicatorChange = (indicatorKey: IndicatorKey) => {
-    setSelectedIndicators(prev => 
-      prev.includes(indicatorKey)
-        ? prev.filter(item => item !== indicatorKey)
-        : [...prev, indicatorKey]
-    );
-  };
-
   const handleExportCSV = useCallback(() => {
-    if (!allData || selectedIndicators.length === 0) return;
+    if (!allData) return;
 
-    const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    const headers = ['Month', ...allIndicatorKeys.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
     const rows = allData.map(row => {
-      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key] ?? '')];
+      const values = [`"${row.month}"`, ...allIndicatorKeys.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -135,7 +131,7 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [allData, selectedIndicators]);
+  }, [allData]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -165,7 +161,7 @@ const App: React.FC = () => {
             <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
           )}
           <button
-            onClick={handleFetchData}
+            onClick={loadAllData}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
           >
             Retry
@@ -175,17 +171,18 @@ const App: React.FC = () => {
     }
     
     if (allData) {
-      return <EconomicChart data={allData} selectedIndicators={selectedIndicators} />;
+      return <EconomicChart data={allData} selectedIndicators={allIndicatorKeys} />;
     }
 
+    // This state is unlikely to be seen as isLoading is true initially, but it is a safe fallback.
     return (
         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-300">Visualize Economic Data</h3>
+            <h3 className="text-xl font-semibold text-gray-300">Philippine Economic Outlook</h3>
             <p className="text-gray-400 mt-2 max-w-sm">
-                Select one or more indicators from the left panel and click "Fetch Data" to generate a chart.
+                Preparing to fetch the latest economic indicators...
             </p>
         </div>
     );
@@ -204,30 +201,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Column 1: Controls */}
-          <aside className="lg:col-span-3">
-            <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
-              <IndicatorSelector
-                selectedIndicators={selectedIndicators}
-                onIndicatorChange={handleIndicatorChange}
-                onFetchData={handleFetchData}
-                isFetchDisabled={selectedIndicators.length === 0 || isLoading}
-                onExportCSV={handleExportCSV}
-                isExportDisabled={!allData || selectedIndicators.length === 0 || isLoading}
-              />
-            </div>
-          </aside>
-
-          {/* Column 2: Chart */}
-          <main className="lg:col-span-6">
-            <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
-              <div className="min-h-[420px]">
-                {renderContent()}
-              </div>
-            </section>
-          </main>
-
-          {/* Column 3: Sources */}
+          {/* Column 1: Sources */}
           <aside className="lg:col-span-3">
              {allData && sources && sources.length > 0 && (
               <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
@@ -235,6 +209,30 @@ const App: React.FC = () => {
               </div>
             )}
           </aside>
+
+          {/* Column 2: Chart */}
+          <main className="lg:col-span-9">
+            <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
+              <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-100">Economic Indicators Chart</h2>
+                  {allData && ( // Only show button when data is loaded
+                      <button
+                          onClick={handleExportCSV}
+                          disabled={isLoading}
+                          className="flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-500 disabled:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-colors text-sm"
+                      >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Export CSV
+                      </button>
+                  )}
+              </div>
+              <div className="min-h-[420px]">
+                {renderContent()}
+              </div>
+            </section>
+          </main>
         </div>
         
         <footer className="text-center mt-12 py-6 border-t border-gray-800 text-gray-500 text-sm">
