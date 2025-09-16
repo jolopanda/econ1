@@ -12,8 +12,13 @@ const PRIMARY_SOURCES: Source[] = [
   { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
 ];
 
-// Get all available indicator keys from the map.
-const allIndicatorKeys = Object.keys(INDICATORS_MAP) as IndicatorKey[];
+// Define a curated list of indicators to display by default for a cleaner chart.
+const defaultIndicators: IndicatorKey[] = [
+  'gdpGrowth',
+  'inflationRate',
+  'unemploymentRate',
+  'pesoDollarRate',
+];
 
 // Helper to parse and format error messages for better UX
 const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
@@ -50,7 +55,7 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 };
 
 const App: React.FC = () => {
-  const [allData, setAllData] = useState<EconomicIndicator[] | null>(null);
+  const [data, setData] = useState<EconomicIndicator[] | null>(null);
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading immediately
   const [error, setError] = useState<string | null>(null);
@@ -77,17 +82,16 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
   }, [isLoading]);
 
-  const loadAllData = useCallback(async () => {
-    // This function will now be called on mount to fetch all data.
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setAllData(null); // Clear previous data
+    setData(null); // Clear previous data
     setLoadingMessage('Fetching latest market data...');
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData(allIndicatorKeys);
+      const { data, sources: fetchedSources } = await fetchEconomicData(defaultIndicators);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
-      setAllData(sortedData);
+      setData(sortedData);
       
       // Combine primary and fetched sources, ensuring no duplicates.
       const combinedSources = [...PRIMARY_SOURCES, ...fetchedSources];
@@ -109,15 +113,15 @@ const App: React.FC = () => {
 
   // Fetch data on initial component mount.
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    loadData();
+  }, [loadData]);
   
   const handleExportCSV = useCallback(() => {
-    if (!allData) return;
+    if (!data) return;
 
-    const headers = ['Month', ...allIndicatorKeys.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
-    const rows = allData.map(row => {
-      const values = [`"${row.month}"`, ...allIndicatorKeys.map(key => row[key] ?? '')];
+    const headers = ['Month', ...defaultIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    const rows = data.map(row => {
+      const values = [`"${row.month}"`, ...defaultIndicators.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -131,7 +135,7 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [allData]);
+  }, [data]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -161,7 +165,7 @@ const App: React.FC = () => {
             <p className="text-red-400 mt-2 max-w-2xl">{message}</p>
           )}
           <button
-            onClick={loadAllData}
+            onClick={loadData}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
           >
             Retry
@@ -170,8 +174,8 @@ const App: React.FC = () => {
       );
     }
     
-    if (allData) {
-      return <EconomicChart data={allData} selectedIndicators={allIndicatorKeys} />;
+    if (data) {
+      return <EconomicChart data={data} selectedIndicators={defaultIndicators} />;
     }
 
     // This state is unlikely to be seen as isLoading is true initially, but it is a safe fallback.
@@ -190,7 +194,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-screen-2xl mx-auto">
+      <div className="w-full max-w-screen-xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
             Philippine Economic Outlook
@@ -200,22 +204,13 @@ const App: React.FC = () => {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Column 1: Sources */}
-          <aside className="lg:col-span-3">
-             {allData && sources && sources.length > 0 && (
-              <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700 sticky top-8">
-                <SourceList sources={sources} />
-              </div>
-            )}
-          </aside>
-
-          {/* Column 2: Chart */}
-          <main className="lg:col-span-9">
+        <div className="flex flex-col gap-8">
+          {/* Main Chart Section */}
+          <main>
             <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
               <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-100">Economic Indicators Chart</h2>
-                  {allData && ( // Only show button when data is loaded
+                  {data && ( // Only show button when data is loaded
                       <button
                           onClick={handleExportCSV}
                           disabled={isLoading}
@@ -233,6 +228,13 @@ const App: React.FC = () => {
               </div>
             </section>
           </main>
+          
+          {/* Data Sources Section */}
+          {data && sources && sources.length > 0 && (
+            <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
+              <SourceList sources={sources} />
+            </section>
+          )}
         </div>
         
         <footer className="text-center mt-12 py-6 border-t border-gray-800 text-gray-500 text-sm">
