@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
 import SourceList from './components/SourceList';
+import IndicatorSelector from './components/IndicatorSelector';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
@@ -10,14 +11,6 @@ const PRIMARY_SOURCES: Source[] = [
   { title: 'Bangko Sentral ng Pilipinas (BSP)', uri: 'https://www.bsp.gov.ph/' },
   { title: 'Philippine Statistics Authority (PSA)', uri: 'https://psa.gov.ph/' },
   { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
-];
-
-// Define a curated list of indicators to display by default for a cleaner chart.
-const defaultIndicators: IndicatorKey[] = [
-  'gdpGrowth',
-  'inflationRate',
-  'unemploymentRate',
-  'pesoDollarRate',
 ];
 
 // Helper to parse and format error messages for better UX
@@ -57,10 +50,19 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
 const App: React.FC = () => {
   const [data, setData] = useState<EconomicIndicator[] | null>(null);
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading immediately
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
+  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>(['pesoDollarRate']);
+
+  const handleIndicatorChange = useCallback((key: IndicatorKey) => {
+    setSelectedIndicators(prev =>
+      prev.includes(key)
+        ? prev.filter(i => i !== key)
+        : [...prev, key]
+    );
+  }, []);
 
   // Effect for cycling through loading messages
   useEffect(() => {
@@ -77,23 +79,31 @@ const App: React.FC = () => {
     const intervalId = setInterval(() => {
       setLoadingMessage(messages[messageIndex]);
       messageIndex = (messageIndex + 1) % messages.length;
-    }, 2000); // Change message every 2 seconds
+    }, 2000);
 
-    return () => clearInterval(intervalId); // Cleanup on component unmount or when isLoading changes
+    return () => clearInterval(intervalId);
   }, [isLoading]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setData(null); // Clear previous data
+    setData(null);
     setLoadingMessage('Fetching latest market data...');
+
+    if (selectedIndicators.length === 0) {
+      setData([]);
+      setSources(PRIMARY_SOURCES);
+      setIsLoading(false);
+      setDateRange('Please select at least one indicator.');
+      return;
+    }
+
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData(defaultIndicators);
+      const { data, sources: fetchedSources } = await fetchEconomicData(selectedIndicators);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setData(sortedData);
       
-      // Combine primary and fetched sources, ensuring no duplicates.
       const combinedSources = [...PRIMARY_SOURCES, ...fetchedSources];
       const uniqueSources = Array.from(new Map(combinedSources.map(s => [s.uri, s])).values());
       setSources(uniqueSources);
@@ -102,6 +112,8 @@ const App: React.FC = () => {
         const firstMonth = sortedData[0].month;
         const lastMonth = sortedData[sortedData.length - 1].month;
         setDateRange(`Data from ${firstMonth} to ${lastMonth}`);
+      } else {
+        setDateRange('No data available for the selected indicators.');
       }
 
     } catch (err) {
@@ -109,19 +121,20 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // Empty dependency array as it doesn't depend on any props/state
+  }, [selectedIndicators]);
 
   // Fetch data on initial component mount.
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const handleExportCSV = useCallback(() => {
-    if (!data) return;
+    if (!data || data.length === 0) return;
 
-    const headers = ['Month', ...defaultIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
     const rows = data.map(row => {
-      const values = [`"${row.month}"`, ...defaultIndicators.map(key => row[key] ?? '')];
+      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -135,7 +148,7 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [data]);
+  }, [data, selectedIndicators]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -175,10 +188,22 @@ const App: React.FC = () => {
     }
     
     if (data) {
-      return <EconomicChart data={data} selectedIndicators={defaultIndicators} />;
+      if (data.length === 0 && selectedIndicators.length > 0) {
+        return (
+          <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h15.75c.621 0 1.125.504 1.125 1.125v6.75C21 20.496 20.496 21 19.875 21H4.125A1.125 1.125 0 013 19.875v-6.75zM12 12V9m0 3h-2.25M15 12h-2.25M12 6.375V3.75m0 2.625A2.625 2.625 0 1112 3.75a2.625 2.625 0 010 5.25z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-300">No Data Available</h3>
+            <p className="text-gray-400 mt-2 max-w-sm">
+              We could not find data for the selected indicators. Please try a different selection.
+            </p>
+          </div>
+        );
+      }
+      return <EconomicChart data={data} selectedIndicators={selectedIndicators} />;
     }
 
-    // This state is unlikely to be seen as isLoading is true initially, but it is a safe fallback.
     return (
         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -194,7 +219,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-screen-xl mx-auto">
+      <div className="w-full max-w-screen-2xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
             Philippine Economic Outlook
@@ -204,37 +229,38 @@ const App: React.FC = () => {
           </p>
         </header>
 
-        <div className="flex flex-col gap-8">
-          {/* Main Chart Section */}
-          <main>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Panel: Indicators */}
+          <aside className="lg:col-span-1">
+            <div className="sticky top-6 bg-gray-800/50 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-2xl border border-gray-700">
+              <IndicatorSelector 
+                selectedIndicators={selectedIndicators}
+                onIndicatorChange={handleIndicatorChange}
+                onFetchData={loadData}
+                isFetchDisabled={isLoading || selectedIndicators.length === 0}
+                onExportCSV={handleExportCSV}
+                isExportDisabled={isLoading || !data || data.length === 0}
+              />
+            </div>
+          </aside>
+
+          {/* Center Panel: Chart */}
+          <main className="lg:col-span-2">
             <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-100">Economic Indicators Chart</h2>
-                  {data && ( // Only show button when data is loaded
-                      <button
-                          onClick={handleExportCSV}
-                          disabled={isLoading}
-                          className="flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-500 disabled:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-colors text-sm"
-                      >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          Export CSV
-                      </button>
-                  )}
-              </div>
-              <div className="min-h-[420px]">
+              <div className="min-h-[420px] flex flex-col justify-center">
                 {renderContent()}
               </div>
             </section>
           </main>
           
-          {/* Data Sources Section */}
-          {data && sources && sources.length > 0 && (
-            <section className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
-              <SourceList sources={sources} />
-            </section>
-          )}
+          {/* Right Panel: Sources */}
+          <aside className="lg:col-span-1">
+             { !isLoading && !error && sources.length > 0 && (
+                <div className="sticky top-6 bg-gray-800/50 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-2xl border border-gray-700">
+                  <SourceList sources={sources} />
+                </div>
+             )}
+          </aside>
         </div>
         
         <footer className="text-center mt-12 py-6 border-t border-gray-800 text-gray-500 text-sm">

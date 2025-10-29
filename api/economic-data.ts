@@ -1,4 +1,3 @@
-
 // This file represents a a serverless function that runs on a backend (like Vercel).
 // It securely uses the API key on the server and is not exposed to the client browser.
 // When deployed, Vercel automatically creates an API endpoint at /api/economic-data.
@@ -31,9 +30,9 @@ async function getEconomicData(indicatorKeys: IndicatorKey[]): Promise<{ data: E
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `
-**Primary Directive: Use Google Search to find verifiable economic data for the Philippines.**
+**Primary Directive: Use Google Search to find verifiable economic outlook and forecast data for the Philippines.**
 
-Your role is a financial data analyst. You **MUST** use the Google Search tool to gather the most recent 12 months of available data for these specific indicators in the Philippines:
+Your role is a financial data analyst. You **MUST** use the Google Search tool to gather a forecast of monthly data for these specific indicators in the Philippines, starting from the most recent available month and extending up to **and including October 2025**.
 ${indicatorNamesList}
 
 **Output Requirements:**
