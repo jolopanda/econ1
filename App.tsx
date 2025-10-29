@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import EconomicChart from './components/EconomicChart';
 import SourceList from './components/SourceList';
-import IndicatorSelector from './components/IndicatorSelector';
+import IndicatorPanel from './components/IndicatorPanel';
 import { fetchEconomicData } from './services/geminiService';
 import { EconomicIndicator, INDICATORS_MAP, IndicatorKey, Source } from './types';
 
@@ -13,6 +13,9 @@ const PRIMARY_SOURCES: Source[] = [
   { title: 'Asian Development Bank (ADB)', uri: 'https://www.adb.org/countries/philippines/main' },
 ];
 
+// All indicators to fetch from the API and display on the chart.
+const ALL_INDICATORS = Object.keys(INDICATORS_MAP) as IndicatorKey[];
+
 // Helper to parse and format error messages for better UX
 const getFriendlyErrorMessage = (error: string | null): { title: string; message: string; isHtml: boolean } => {
   if (!error) {
@@ -22,7 +25,7 @@ const getFriendlyErrorMessage = (error: string | null): { title: string; message
   if (/API_KEY environment variable not set/i.test(error)) {
     return {
       title: 'Configuration Error',
-      message: 'The <code>API_KEY</code> is missing on the server. If you are the application owner, please go to your deployment platform (e.g., Vercel), add an Environment Variable named <code>API_KEY</code> with your Gemini API key, and then redeploy the application.',
+      message: 'The <code>API_KEY</code> is missing on the server. If you are the application owner, please go to your deployment platform, add an Environment Variable named <code>API_KEY</code> with your Gemini API key, and then redeploy the application.',
       isHtml: true,
     };
   }
@@ -52,17 +55,7 @@ const App: React.FC = () => {
   const [sources, setSources] = useState<Source[]>(PRIMARY_SOURCES);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<string>('');
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
-  const [selectedIndicators, setSelectedIndicators] = useState<IndicatorKey[]>(['pesoDollarRate']);
-
-  const handleIndicatorChange = useCallback((key: IndicatorKey) => {
-    setSelectedIndicators(prev =>
-      prev.includes(key)
-        ? prev.filter(i => i !== key)
-        : [...prev, key]
-    );
-  }, []);
 
   // Effect for cycling through loading messages
   useEffect(() => {
@@ -90,16 +83,8 @@ const App: React.FC = () => {
     setData(null);
     setLoadingMessage('Fetching latest market data...');
 
-    if (selectedIndicators.length === 0) {
-      setData([]);
-      setSources(PRIMARY_SOURCES);
-      setIsLoading(false);
-      setDateRange('Please select at least one indicator.');
-      return;
-    }
-
     try {
-      const { data, sources: fetchedSources } = await fetchEconomicData(selectedIndicators);
+      const { data, sources: fetchedSources } = await fetchEconomicData(ALL_INDICATORS);
       const sortedData = data.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
       
       setData(sortedData);
@@ -108,33 +93,25 @@ const App: React.FC = () => {
       const uniqueSources = Array.from(new Map(combinedSources.map(s => [s.uri, s])).values());
       setSources(uniqueSources);
 
-      if (sortedData && sortedData.length > 0) {
-        const firstMonth = sortedData[0].month;
-        const lastMonth = sortedData[sortedData.length - 1].month;
-        setDateRange(`Data from ${firstMonth} to ${lastMonth}`);
-      } else {
-        setDateRange('No data available for the selected indicators.');
-      }
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedIndicators]);
+  }, []);
 
   // Fetch data on initial component mount.
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadData]);
   
   const handleExportCSV = useCallback(() => {
     if (!data || data.length === 0) return;
 
-    const headers = ['Month', ...selectedIndicators.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
+    // Export all the indicators that are currently displayed on the chart.
+    const headers = ['Month', ...ALL_INDICATORS.map(key => `"${INDICATORS_MAP[key].name}"`)].join(',');
     const rows = data.map(row => {
-      const values = [`"${row.month}"`, ...selectedIndicators.map(key => row[key] ?? '')];
+      const values = [`"${row.month}"`, ...ALL_INDICATORS.map(key => row[key] ?? '')];
       return values.join(',');
     });
 
@@ -148,7 +125,7 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [data, selectedIndicators]);
+  }, [data]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -188,7 +165,7 @@ const App: React.FC = () => {
     }
     
     if (data) {
-      if (data.length === 0 && selectedIndicators.length > 0) {
+      if (data.length === 0) {
         return (
           <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -196,12 +173,12 @@ const App: React.FC = () => {
             </svg>
             <h3 className="text-xl font-semibold text-gray-300">No Data Available</h3>
             <p className="text-gray-400 mt-2 max-w-sm">
-              We could not find data for the selected indicators. Please try a different selection.
+              We could not retrieve forecast data at this time. This may be a temporary issue.
             </p>
           </div>
         );
       }
-      return <EconomicChart data={data} selectedIndicators={selectedIndicators} />;
+      return <EconomicChart data={data} displayedIndicators={ALL_INDICATORS} />;
     }
 
     return (
@@ -225,19 +202,16 @@ const App: React.FC = () => {
             Philippine Economic Outlook
           </h1>
           <p className="mt-2 text-lg text-gray-400">
-            {dateRange || 'Visualizing Key Economic Indicators'}
+            Visualizing Key Economic Indicators
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Panel: Indicators */}
+          {/* Left Panel: Displayed Indicators Info */}
           <aside className="lg:col-span-1">
             <div className="sticky top-6 bg-gray-800/50 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-2xl border border-gray-700">
-              <IndicatorSelector 
-                selectedIndicators={selectedIndicators}
-                onIndicatorChange={handleIndicatorChange}
-                onFetchData={loadData}
-                isFetchDisabled={isLoading || selectedIndicators.length === 0}
+              <IndicatorPanel
+                displayedIndicators={ALL_INDICATORS}
                 onExportCSV={handleExportCSV}
                 isExportDisabled={isLoading || !data || data.length === 0}
               />

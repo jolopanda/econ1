@@ -5,7 +5,7 @@ import { EconomicIndicator, INDICATORS_MAP, IndicatorKey } from '../types';
 
 interface EconomicChartProps {
   data: EconomicIndicator[];
-  selectedIndicators: IndicatorKey[];
+  displayedIndicators: IndicatorKey[];
 }
 
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
@@ -37,9 +37,9 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   return null;
 };
 
-const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators }) => {
+const EconomicChart: React.FC<EconomicChartProps> = ({ data, displayedIndicators }) => {
   // --- Dual Y-Axis Logic ---
-  const units = [...new Set(selectedIndicators.map(key => INDICATORS_MAP[key].unit))];
+  const units = [...new Set(displayedIndicators.map(key => INDICATORS_MAP[key].unit))];
   const yAxis1Unit = units[0];
   const yAxis2Unit = units.length > 1 ? units[1] : null;
 
@@ -84,7 +84,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
         <Legend wrapperStyle={{ color: '#d1d5db' }} />
 
         {/* --- ADDED REFERENCE LINES --- */}
-        {selectedIndicators.map(key => {
+        {displayedIndicators.map(key => {
             const indicator = INDICATORS_MAP[key];
             if (indicator.threshold === undefined) {
                 return null;
@@ -113,7 +113,7 @@ const EconomicChart: React.FC<EconomicChartProps> = ({ data, selectedIndicators 
             );
         })}
 
-        {selectedIndicators.map(key => {
+        {displayedIndicators.map(key => {
             const indicator = INDICATORS_MAP[key];
             const yAxisId = getAxisId(indicator.unit);
             
